@@ -9,7 +9,24 @@ Design doc: [docs/design.md](docs/design.md) · Shared rules (collision layers, 
 
 1. Install Godot **4.3 or newer** (standard version, not .NET).
 2. Godot → *Import* → pick this folder's `project.godot`.
-3. Press **F5** to play from the title screen, or open any scene and press **F6** to run just that scene.
+
+**Easy run**
+
+| Where | Play the game | Play just the open scene |
+|---|---|---|
+| **Godot editor** | **F5** (or the ▶ button top-right) | **F6** (or the 🎬 button) |
+| **VS Code** | **F5** (uses *Godot: Play game*) | pick *Godot: Play current scene* in the Run and Debug dropdown, then **F5** |
+
+VS Code needs the **Godot Tools** extension (`geequlim.godot-tools`). Set the Godot path once under *Settings → Godot Tools → Editor Path*.
+
+## Godot basics (new to Godot? read this)
+
+- **`.tscn`** = a **scene**: a tree of nodes saved as text (a player, a monster, a menu). Edit it in the Godot editor, not by hand. Scenes can contain other scenes.
+- **`.gd`** = a **GDScript** file: the code that makes a node do things. It is attached to a node in a scene.
+- **Node** = one building block (sprite, collision shape, timer...). **Signal** = a node announcing "something happened"; other code listens. Here the shared ones live in `autoload/events.gd`.
+- Everyday use: double-click a `.tscn` in the **FileSystem** dock (bottom-left) to open it → pick a node in the **Scene** dock (top-left) → change its settings in the **Inspector** (right) → click the 📜 icon to open or attach its `.gd`.
+- **Save** with Ctrl/Cmd+S, then press **F6** to test just your scene. Red text in the **Output** / **Debugger** panel at the bottom = an error to fix.
+- Only edit the files you own (see "Who owns what"). Need a change in someone else's file or in `events.gd`, `project.godot`, `docs/`? Ask Ploy.
 
 ## Who owns what
 
@@ -212,14 +229,36 @@ What Ploy does:
 What everyone else does: nothing special. You don't need to run the smoke test or write tests. It's still nice to press **F5** (or **F6** on your own scene) so you can see your own change working, and to
 fix the bugs Ploy assigns to you.
 
-## Git workflow (short version)
+## Git workflow (no terminal needed)
+
+Use **[GitHub Desktop](https://desktop.github.com)** (free). Godot has no built-in git, and this is the easiest way. One-time setup: install it, sign in, *File → Clone repository* → pick this repo.
+
+**Start your work**
+1. Top bar → *Current Branch* → *New Branch* → name it `yourname/feature-name` (for example `mew/level-1-tiles`).
+
+**Do your work in Godot** (see "Godot basics"), then press **F5** (or **F6** on your scene). It should run with no red errors in the Output panel and do what its `GUIDE.md` says.
+
+**When you finish your part**
+1. Save everything in Godot (Ctrl/Cmd+S).
+2. In GitHub Desktop, look at the changed-files list on the left. Only files you own should be there. If something else is, right-click it → *Discard changes*.
+3. Bottom-left: type a short message ("Add level 1 tiles") → **Commit to yourname/feature-name**.
+4. Click **Push origin** (top bar).
+5. Click **Create Pull Request** (it opens GitHub) and tag Ploy. Ploy runs the tests and merges.
+6. Don't merge your own PR. If Ploy reports a bug in your part, fix it, then commit and push again on the same branch.
+
+Never commit to `main` (the branch name in the top bar should be yours).
+
+<details><summary>Prefer the terminal? Same thing as commands</summary>
 
 ```bash
 git checkout main && git pull
 git checkout -b yourname/feature-name
 # ...work, press F5 to check it runs...
+git status                                   # only your own files should be listed
 git add . && git commit -m "Short description"
 git push -u origin yourname/feature-name   # then open a Pull Request on GitHub
 ```
+
+</details>
 
 Merge small and often (at least once a day), so the others get your work early and nobody waits for a big merge at the end.

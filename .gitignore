@@ -14,7 +14,8 @@ Thumbs.db
 desktop.ini
 *.tmp
 *~
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 
 # NOTE: *.import files next to images ARE committed on purpose (they hold import settings).

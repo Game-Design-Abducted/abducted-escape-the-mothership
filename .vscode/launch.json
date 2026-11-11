@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Godot: Play game",
+      "type": "godot",
+      "request": "launch",
+      "project": "${workspaceFolder}",
+      "scene": "main"
+    },
+    {
+      "name": "Godot: Play current scene",
+      "type": "godot",
+      "request": "launch",
+      "project": "${workspaceFolder}",
+      "scene": "current"
+    }
+  ]
+}
