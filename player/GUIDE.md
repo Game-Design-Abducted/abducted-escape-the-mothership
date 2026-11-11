@@ -13,7 +13,7 @@
 | **Nov 11** | Movement + wall collision feel good. Decide: free movement or Pac-Man grid movement |
 | **Nov 13** | Attack tuning, enemy damage, player HP, hit/death visuals |
 | **Nov 14** | Laser pickup works with your player (with Kong) + general combat polish |
-| **Nov 15** | Gameplay testing and bug fixes |
+| **Nov 15** | Fix the bugs Ploy assigns to you (Ploy does the testing) |
 
 ## Test
 - `sandbox/yang_test.tscn` → **F6**: Level 1 + player, no enemies or timer.

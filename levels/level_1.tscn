@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://iwyds4rsw7h5"]
 
 [ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
-[ext_resource type="TileSet" path="res://levels/tiles/techlab_tileset.tres" id="2_tiles"]
+[ext_resource type="TileSet" uid="uid://dtbefg40yb2pb" path="res://levels/tiles/techlab_tileset.tres" id="2_tiles"]
 
 [sub_resource type="Curve2D" id="Curve2D_pathA"]
 _data = {
@@ -31,7 +31,7 @@ curve = SubResource("Curve2D_pathA")
 curve = SubResource("Curve2D_pathB")
 
 [node name="PlayerStart" type="Marker2D" parent="."]
-position = Vector2(640, 560)
+position = Vector2(400, 480)
 
 [node name="OriginSpot" type="Marker2D" parent="."]
 position = Vector2(640, 360)

@@ -15,14 +15,14 @@ signal player_hp_changed(hp: int, max_hp: int)   ## HUD hearts listen to this
 signal player_died
 
 # ---- Enemies (emitted by Ploy's enemy.gd / wave_manager.gd) ----
-signal enemy_killed(enemy: Node)                 ## LaserManager can count kills
+signal enemy_killed(enemy: Node)                 ## LaserManager counts these to charge the laser
 signal wave_started(wave_number: int)
 
 # ---- Laser (emitted by Yang's laser_manager.gd) ----
 signal laser_spawned(position: Vector2)          ## HUD: "Laser available!"
 signal laser_picked_up                           ## gameplay freezes and aim mode starts
 signal laser_fired(hit: bool)                    ## hit = origin destroyed, miss = retry later
-signal laser_countdown_changed(seconds_left: float)
+signal laser_charge_changed(kills: int, kills_needed: int)   ## laser charges from kills
 
 # ---- Origin (emitted by Ploy's origin.gd) ----
 signal origin_destroyed

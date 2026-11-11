@@ -17,7 +17,7 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	# Simple bob so it stands out. Replace with a real animation later.
 	$Sprite2D.position.y = sin(Time.get_ticks_msec() / 200.0) * 3.0
 
