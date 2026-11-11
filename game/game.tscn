@@ -1,0 +1,19 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://enemies/wave_manager.gd" id="2_waves"]
+[ext_resource type="Script" path="res://laser/laser_manager.gd" id="3_laser"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="4_hud"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("2_waves")
+
+[node name="LaserManager" type="Node" parent="."]
+script = ExtResource("3_laser")
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]

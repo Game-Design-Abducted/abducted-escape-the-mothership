@@ -1,0 +1,35 @@
+# enemies/: Ploy (Enemy + Wave Programmer **and Integrator**)
+
+**You own:** `enemy.gd`, `enemy_basic/fast/tank.tscn`, `wave_manager.gd`, `sandbox/ploy_*.tscn`
+**As integrator you also gatekeep:** `project.godot`, `autoload/events.gd`, `docs/contracts.md`, merging into `main`
+**Others depend on:** `take_damage(amount)` on the enemy root, group `"enemies"`, `Hitbox` on layer 3.
+
+## Already working (starter code)
+- Monsters walk Mew's paths, take damage from bullets, hurt the player on contact, and play their hit/dead sprites.
+- Wave manager spawns waves from the `WAVES` table and loops the last wave, faster each time.
+
+## Enemy tasks
+| Deadline | Task |
+|---|---|
+| **Nov 11** | Basic spawning + movement ✅ (starter). Check it on Mew's real paths |
+| **Nov 13** | 3 monster types feel different + a real Level 1 wave table |
+| **Nov 14** | Level 2 enemy difficulty and movement |
+| **Nov 15** | Gameplay testing and bug fixes |
+
+## Integrator tasks
+| When | Task |
+|---|---|
+| Every day | Review & merge PRs into `main`. Check that the project opens and **F5** runs after each merge |
+| Every day | Post in the chat: "main is updated, everyone pull" |
+| On request | Add input actions / autoloads / signals (you're the only one who edits `project.godot` and `events.gd`) |
+| **Nov 13** | **Integration Day**: merge every branch, play the full game (title → L1 → L2 → ending), post a bug list with an owner for each bug |
+| **Nov 15** | Final playtest, export the build (Project → Export), tag the release: `git tag v1.0` |
+
+### Merge checklist
+1. Did the PR only touch the author's own folder? If not, ask why.
+2. Pull the branch, open Godot, press **F5**, play for 1 minute.
+3. Check the Debugger → Errors tab for red errors.
+4. Merge. If two people changed the same `.tscn`, don't hand-merge it. Keep one version and ask the other person to redo their change.
+
+## Test
+- `sandbox/ploy_test.tscn` → **F6**: Level 1 paths + waves, no player.

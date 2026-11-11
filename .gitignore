@@ -1,0 +1,20 @@
+# Godot 4 cache. Godot rebuilds it, so never commit it.
+.godot/
+
+# Export output
+/build/
+/export/
+*.exe
+*.pck
+/android/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*~
+.vscode/
+.idea/
+
+# NOTE: *.import files next to images ARE committed on purpose (they hold import settings).

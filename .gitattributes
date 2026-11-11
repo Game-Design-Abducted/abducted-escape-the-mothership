@@ -1,0 +1,18 @@
+# Use LF line endings for Godot text files so Windows and Mac users don't create fake diffs
+* text=auto eol=lf
+
+*.gd     text eol=lf
+*.tscn   text eol=lf
+*.tres   text eol=lf
+*.godot  text eol=lf
+*.import text eol=lf
+*.md     text eol=lf
+
+*.png binary
+*.jpg binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.ai  binary
