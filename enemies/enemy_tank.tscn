@@ -13,6 +13,7 @@ rotates = false
 script = ExtResource("1_enemy")
 speed = 50.0
 max_hp = 3
+corner_pause = 0.6
 normal_texture = ExtResource("2_normal")
 hit_texture = ExtResource("3_hit")
 dead_texture = ExtResource("4_dead")
