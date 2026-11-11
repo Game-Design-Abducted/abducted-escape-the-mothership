@@ -1,0 +1,56 @@
+name: CI
+
+# Runs on every pull request and on every push to main.
+# To run the same checks on your own machine, see the commands in each step.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same PR cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.3-stable   # keep in step with config/features in project.godot
+
+defaults:
+  run:
+    shell: bash   # gives `set -eo pipefail`, so a failing godot is not hidden by `| tee`
+
+jobs:
+  check:
+    name: Godot checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          rm godot.zip
+          godot --version
+
+      # Builds the .godot/ cache (imported images, class names). The next steps need it.
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Every script and scene loads
+        run: godot --headless --path . -s tools/check_load.gd
+
+      # Godot keeps exit code 0 after a runtime script error, so also search the log.
+      - name: Smoke test (plays the whole game loop)
+        run: |
+          godot --headless --path . -s tools/smoke_test.gd 2>&1 | tee smoke.log
+          if grep -q "SCRIPT ERROR" smoke.log; then
+            echo "::error::The smoke test printed a SCRIPT ERROR (see the log above)"
+            exit 1
+          fi
