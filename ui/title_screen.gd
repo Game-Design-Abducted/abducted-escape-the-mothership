@@ -1,16 +1,15 @@
 extends Control
-## =====================================================================
-## TITLE / HOME SCREEN. OWNER: Fah. This is the game's main scene.
-## =====================================================================
-## Right now it shows the finished Homescreen.jpg, with an invisible button
-## over the START box it already has (Enter/Space works too).
+## Title / home screen. Fah's. This is the game's main scene.
 ##
-## TODO (Fah, Nov 15):
-##   [ ] Rebuild from the layered pieces in assets/home/ (Background, Mountain,
-##       Light beam, Star) so they can animate: twinkling stars, beam pulse,
-##       UFO bobbing (Spaceship.png)
-##   [ ] Start button hover effect + click sound
-##   [ ] Title music (assets/audio)
+## For now it shows the finished Homescreen.jpg with an invisible button over
+## the START box that's already in the picture (Enter/Space works too).
+##
+## TODO Fah:
+##  - rebuild it from the layered pieces in assets/home/ (Background, Mountain,
+##    Light beam, Star) so they can animate: twinkling stars, pulsing beam,
+##    UFO bobbing (Spaceship.png)
+##  - start button hover effect + click sound
+##  - title music (assets/audio)
 
 func _ready() -> void:
 	$StartButton.pressed.connect(_on_start)

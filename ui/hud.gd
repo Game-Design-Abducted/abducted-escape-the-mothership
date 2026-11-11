@@ -1,20 +1,19 @@
 extends CanvasLayer
-## =====================================================================
-## HUD. OWNER: Fah (Art + UI + Animation)
-## =====================================================================
-## Only LISTENS to Events. It never touches player/enemy code directly.
-## Process mode = Always (set in hud.tscn), so it still updates while paused.
+## HUD. Kong's (logic). Fah supplies the art, font and icons.
 ##
-##   hearts   <- Events.player_hp_changed(hp, max_hp)
-##   timer    <- Events.time_changed(seconds_left)
-##   laser    <- Events.laser_countdown_changed / laser_spawned / laser_picked_up / laser_fired
-##   message  <- Events.level_finished(won)
+## Only LISTENS to Events, it never touches player/enemy code directly.
+## Process mode is Always (set in hud.tscn) so it keeps updating while paused.
 ##
-## TODO (Fah):
-##   Nov 14  [ ] Pixel font (put .ttf in assets/fonts, set it in a Theme)
-##           [ ] Heart lose animation, timer turns red under 30 s
-##           [ ] Laser icon (Laser Item.png) next to the laser status
-##   Nov 15  [ ] Wave number (Events.wave_started), level title
+##   hearts  <- Events.player_hp_changed(hp, max_hp)
+##   timer   <- Events.time_changed(seconds_left)
+##   laser   <- Events.laser_countdown_changed / laser_spawned / laser_picked_up / laser_fired
+##   message <- Events.level_finished(won)
+##
+## TODO Kong (ask Fah for the art):
+##  - pixel font (put the .ttf in assets/fonts and set it in a Theme)
+##  - heart lose animation, timer turns red under 30 s
+##  - laser icon (Laser Item.png) next to the laser status
+##  - wave number (Events.wave_started), level title
 
 const HEART := preload("res://assets/sprites/Heart.png")
 const HEART_LOST := preload("res://assets/sprites/HeartDeducted.png")

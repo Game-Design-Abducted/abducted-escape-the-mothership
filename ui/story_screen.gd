@@ -1,17 +1,16 @@
 extends Control
-## =====================================================================
-## STORY SCREEN. OWNER: Fah
-## =====================================================================
-## Shown between levels. Which page appears is set by GameState.story_id:
-##   "intro"  -> before Level 1
-##   "level2" -> before Level 2
-##   "ending" -> after Level 2 (then the end screen)
+## Story screen. Yang's.
+##
+## Shown between levels. GameState.story_id decides which page:
+##   "intro"  -> before level 1
+##   "level2" -> before level 2
+##   "ending" -> after level 2 (then the end screen)
 ## Press any key / click to continue.
 ##
-## TODO (Fah, Nov 15):
-##   [ ] Story art for each page (Spaceship.png for the ending?)
-##   [ ] Typewriter text effect, pixel font
-##   [ ] "Loading" screen. Could simply be a short fade here.
+## TODO Yang (ask Fah for the story art):
+##  - story art for each page (Spaceship.png for the ending?)
+##  - typewriter text effect, pixel font
+##  - "loading" screen, could just be a short fade here
 
 const PAGES := {
 	"intro": {

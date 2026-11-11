@@ -1,27 +1,27 @@
 extends Node
-## =====================================================================
-## GAME STATE: autoload, available everywhere as `GameState`
-## OWNER: Kong (win/lose conditions + level transitions)
-## =====================================================================
-## Holds the data that must survive a scene change: which level we're on,
-## the 3-minute countdown, and which story page to show.
+## GameState (autoload). Kong's: win/lose and switching between levels.
 ##
-## Scene flow:
+## Keeps the stuff that has to survive a scene change: current level, the
+## 3 minute countdown, and which story page comes next.
+##
+## Flow:
 ##   title_screen -> story("intro") -> game (level 1)
 ##     win  -> story("level2") -> game (level 2)
 ##     win  -> story("ending") -> end_screen (won)
-##     lose -> end_screen (lost) -> retry the same level / menu
+##     lose -> end_screen (lost) -> retry same level or back to menu
 ##
-## The timer counts down only while `running` is true. This autoload uses the
-## default process mode, so the clock also stops while the tree is paused
-## (during laser aiming). If you want the clock to keep ticking while aiming,
-## set process_mode = PROCESS_MODE_ALWAYS in _ready() and check
-## get_tree().paused in _process() yourself.
+## The timer only ticks while `running` is true. This node uses the default
+## process mode, so the clock also stops when the tree is paused (laser aim).
+## If you want it to keep going while aiming, set
+## process_mode = PROCESS_MODE_ALWAYS in _ready() and check
+## get_tree().paused yourself in _process().
 ##
-## TODO (Kong, Nov 15):
-##   [ ] Short "YOU WIN / TIME UP" moment before changing scene (now 1.5 s delay)
-##   [ ] Decide: does the timer pause during aim mode? (it does right now)
-##   [ ] Decide: should retry restart level 1 or the level you lost on? (now: same level)
+## TODO Kong:
+##  - a short "YOU WIN / TIME UP" moment before the scene changes (right now
+##    it's just a 1.5 s delay)
+##  - decide if the timer should pause while aiming (it does at the moment)
+##  - decide if retry restarts level 1 or the level you died on (right now
+##    it's the same level)
 
 const LEVEL_TIME := 180.0   # 3 minutes, from the design doc
 const LAST_LEVEL := 2

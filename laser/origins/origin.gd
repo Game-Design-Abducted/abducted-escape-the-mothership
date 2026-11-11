@@ -1,19 +1,18 @@
 class_name Origin
 extends Area2D
-## =====================================================================
-## MONSTER ORIGIN (base). OWNER: Kong (Laser + Level 2 Programmer)
-## =====================================================================
+## Monster origin (base script). Ploy's.
+##
 ## Level 1: egg.tscn (stands still at Mew's OriginSpot)
 ## Level 2: commander.tscn (walks along Mew's OriginPath, see commander.gd)
 ##
-## Normal bullets can't hurt it: there's no take_damage() here on purpose.
-## Only the laser calls take_laser_hit().
+## Normal bullets can't hurt it. There's no take_damage() here on purpose,
+## only the laser calls take_laser_hit().
 ##
-## Layer 6 (origin). Group "origin".
+## Layer 6 (origin), group "origin".
 ##
-## TODO (Kong, Nov 14):
-##   [ ] Destroy animation / explosion (ask Fah for VFX)
-##   [ ] Maybe more than 1 laser hit for the Commander? (`laser_hits_needed`)
+## TODO Ploy:
+##  - destroy animation / explosion (ask Fah for VFX)
+##  - maybe more than 1 laser hit for the Commander? (`laser_hits_needed`)
 
 ## How close (pixels) the laser line must pass to the center to count as a hit
 @export var hit_radius := 48.0

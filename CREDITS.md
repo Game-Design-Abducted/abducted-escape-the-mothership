@@ -2,10 +2,10 @@
 
 ## Team
 - **Mew**: Map & Level Design
-- **Yang**: Player & Combat
-- **Ploy**: Enemies & Waves, Integration
-- **Kong**: Laser mechanic & Game Logic
-- **Fah**: Art, UI, Animation
+- **Yang**: Player & Combat, Laser sequence (manager, pickup, aim), Story screen
+- **Ploy**: Enemies & Waves, Monster origins (Egg, Commander), End screen, Integration
+- **Kong**: Game logic (timer, win/lose, level flow), HUD
+- **Fah**: Art, Animation, Sound, Title screen
 
 ## Third-party assets
 | Asset | Author | License | Used for |

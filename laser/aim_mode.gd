@@ -1,17 +1,16 @@
 extends Node2D
-## =====================================================================
-## AIM MODE. OWNER: Kong
-## =====================================================================
-## Created by laser_manager.gd after the player picks up the laser.
-## The whole game is paused while this runs. This node uses
-## PROCESS_MODE_ALWAYS so it still works.
+## Aim mode. Yang's.
 ##
-## Draws a line from the player toward the mouse. Click (or K) = fire.
+## laser_manager.gd creates this after the player grabs the laser. The whole
+## game is paused while it runs, so this node uses PROCESS_MODE_ALWAYS to
+## keep working.
 ##
-## TODO (Kong, Nov 13):
-##   [ ] Better aim visuals (dotted line, crosshair, Fah's Laser.png beam on fire)
-##   [ ] Keyboard aiming (rotate with arrows) in case mouse isn't wanted?
-##   [ ] Time limit on aiming? (e.g. 5 s, then auto-miss)
+## Draws a line from the player to the mouse. Click (or K) to fire.
+##
+## TODO Yang:
+##  - nicer aim visuals (dotted line, crosshair, Fah's Laser.png beam on fire, ask Fah if you need more art)
+##  - keyboard aiming (rotate with arrows) in case someone doesn't want the mouse
+##  - time limit on aiming? (like 5 s, then it auto-misses)
 
 signal fired(direction: Vector2)
 

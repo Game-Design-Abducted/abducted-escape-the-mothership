@@ -1,21 +1,20 @@
 extends Node2D
-## =====================================================================
-## GAME: builds and runs ONE level. OWNER: Kong
-## =====================================================================
-## This is the only script that knows about everyone's pieces. It:
+## Game scene script. Kong's. Builds and runs ONE level.
+##
+## This is the only script that knows about everyone's pieces. In order it:
 ##   1. loads Mew's level for GameState.current_level
 ##   2. puts Yang's player at PlayerStart
-##   3. puts Kong's origin (egg / commander) in the level
+##   3. puts Ploy's origin (egg / commander) in the level
 ##   4. starts Ploy's wave manager on the level's paths
-##   5. starts Kong's laser manager
-##   6. Fah's HUD is already in game.tscn and listens to Events
-##   7. tells GameState to start the 3-minute timer
+##   5. starts Yang's laser manager
+##   6. (Kong's HUD is already inside game.tscn and just listens to Events)
+##   7. tells GameState to start the 3 minute timer
 ##
-## Run game.tscn with F6 to play the current level directly (default: level 1).
-## To test level 2 straight away, change `debug_start_level` in the Inspector.
+## Press F6 on game.tscn to play the current level directly (level 1 by default).
+## To jump straight to level 2, change `debug_start_level` in the Inspector.
 ##
-## TODO (Kong): add new wiring here when systems need to meet each other,
-## instead of having systems reach into each other.
+## TODO Kong: when two systems need to talk to each other, wire them up here
+## instead of letting them reach into each other's code.
 
 const LEVEL_SCENES := {
 	1: preload("res://levels/level_1.tscn"),
@@ -47,7 +46,7 @@ func _ready() -> void:
 	player.position = level.get_player_start()
 	level.get_entities().add_child(player)
 
-	# 3. Origin (Kong): level 1 = egg standing still, level 2 = commander walking
+	# 3. Origin (Ploy): level 1 = egg standing still, level 2 = commander walking
 	var origin: Origin
 	var origin_path := level.get_origin_path()
 	if level_number >= 2 and origin_path:
@@ -64,7 +63,7 @@ func _ready() -> void:
 	# 4. Waves (Ploy)
 	wave_manager.setup(level.get_enemy_paths(), level_number)
 
-	# 5. Laser (Kong)
+	# 5. Laser (Yang)
 	laser_manager.setup(level, player, origin)
 
 	# 7. Start the clock

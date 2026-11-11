@@ -1,13 +1,12 @@
 extends Area2D
-## =====================================================================
-## LASER GUN PICKUP. OWNER: Kong
-## =====================================================================
-## Spawned by laser_manager.gd at one of Mew's LaserSpawns markers.
+## Laser gun pickup. Yang's.
+##
+## laser_manager.gd spawns it at one of Mew's LaserSpawns markers.
 ## Layer 5 (pickups), mask 2 (player). Emits `picked_up` when the player touches it.
 ##
-## TODO (Kong / Fah):
-##   [ ] Bobbing / glowing animation so players notice it
-##   [ ] Optional: disappear after N seconds if not collected?
+## TODO Yang (Fah can help with the art):
+##  - bobbing / glowing animation so players actually notice it
+##  - maybe make it disappear after N seconds if nobody grabs it?
 
 signal picked_up
 

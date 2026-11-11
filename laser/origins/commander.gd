@@ -1,15 +1,14 @@
 extends Origin
-## =====================================================================
-## ALIEN COMMANDER: Level 2 moving origin. OWNER: Kong
-## =====================================================================
-## game.gd calls follow_path(level.get_origin_path()).
-## It walks the loop that Mew drew in Level 2's `OriginPath`.
+## Alien Commander, the level 2 moving origin. Ploy's.
 ##
-## TODO (Kong, Nov 14):
-##   [ ] Make it harder to hit: random speed changes, pauses, reversing direction
-##   [ ] Decide: does it keep moving while the player aims? Right now it FREEZES
-##       with everything else. To keep it moving, set this node's
-##       process_mode = PROCESS_MODE_ALWAYS in _ready().
+## game.gd calls follow_path(level.get_origin_path()), and it walks the loop
+## Mew drew in level 2's `OriginPath`.
+##
+## TODO Ploy:
+##  - make it harder to hit: random speed changes, pauses, turning around
+##  - decide if it keeps moving while the player aims. Right now it FREEZES
+##    along with everything else. To keep it moving, set this node's
+##    process_mode = PROCESS_MODE_ALWAYS in _ready().
 
 @export var move_speed := 90.0
 

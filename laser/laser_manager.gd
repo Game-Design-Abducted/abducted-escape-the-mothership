@@ -1,24 +1,23 @@
 extends Node
-## =====================================================================
-## LASER MANAGER: the special mechanic. OWNER: Kong
-## =====================================================================
-## Loop:
-##   1. Countdown (first_delay s) while the player survives
-##   2. Spawn laser_pickup at a random LaserSpawns marker  -> Events.laser_spawned
-##   3. Player touches it -> PAUSE the game, start aim mode -> Events.laser_picked_up
-##   4. Player clicks -> check hit -> UNPAUSE              -> Events.laser_fired(hit)
+## Laser manager, the special mechanic. Yang's.
+##
+## How it loops:
+##   1. countdown (first_delay seconds) while the player survives
+##   2. spawn laser_pickup at a random LaserSpawns marker -> Events.laser_spawned
+##   3. player touches it -> PAUSE the game, start aim mode -> Events.laser_picked_up
+##   4. player clicks -> check hit -> UNPAUSE -> Events.laser_fired(hit)
 ##        hit  -> origin.take_laser_hit() -> Events.origin_destroyed -> GameState: win
-##        miss -> countdown again (retry_delay s) -> back to step 2
+##        miss -> countdown again (retry_delay) -> back to step 2
 ##
 ## game.gd calls setup(level, player, origin).
 ##
-## TODO (Kong):
-##   Nov 12  [x] Spawn + pickup (works)
-##   Nov 13  [x] Freeze, aim, shoot, hit/miss, retry (basic version works)
-##           [ ] Laser beam visual + sound on fire (Fah's Laser.png)
-##           [ ] Should walls block the laser? (now: it goes through walls)
-##   Nov 14  [ ] Tune delays per level (Level 2 harder?)
-##           [ ] Count kills instead of / as well as time? (listen to Events.enemy_killed)
+## TODO Yang:
+##  - spawn + pickup (done, works)
+##  - freeze, aim, shoot, hit/miss, retry (basic version works)
+##  - laser beam visual + sound on fire (Fah's Laser.png)
+##  - should walls block the laser? Right now it goes through them
+##  - tune the delays per level (harder for level 2?)
+##  - count kills instead of / as well as time? (listen to Events.enemy_killed)
 
 @export var first_delay := 30.0   ## seconds before the first laser appears
 @export var retry_delay := 20.0   ## seconds after a miss before the next one

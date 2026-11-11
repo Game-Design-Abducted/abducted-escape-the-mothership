@@ -1,14 +1,13 @@
 extends Control
-## =====================================================================
-## END SCREEN (win or lose). OWNER: Fah
-## =====================================================================
-## Reads GameState.last_result_won.
-##   Won  -> "You escaped!" + Main Menu
-##   Lost -> "Game Over" + Retry (same level) + Main Menu
+## End screen (win or lose). Ploy's.
 ##
-## TODO (Fah, Nov 15):
-##   [ ] Win / lose art (Player_Dead.png for game over? Spaceship flying to Earth for win?)
-##   [ ] Sounds
+## Reads GameState.last_result_won.
+##   won  -> "You escaped!" + Main Menu
+##   lost -> "Game Over" + Retry (same level) + Main Menu
+##
+## TODO Ploy (ask Fah for the art and sounds):
+##  - win / lose art (Player_Dead.png for game over? spaceship flying to Earth for the win?)
+##  - sounds
 
 func _ready() -> void:
 	var won := GameState.last_result_won

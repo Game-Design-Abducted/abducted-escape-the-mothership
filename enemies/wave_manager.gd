@@ -1,21 +1,20 @@
 extends Node
-## =====================================================================
-## WAVE MANAGER. OWNER: Ploy (Enemy + Wave Programmer)
-## =====================================================================
-## game.gd (Kong) creates this and calls:
+## Wave manager. Ploy's.
+##
+## game.gd (Kong) creates this and calls
 ##     wave_manager.setup(level.get_enemy_paths(), GameState.current_level)
-## After that it spawns monsters forever, wave after wave, on Mew's paths.
-## When the list of waves runs out it repeats the last one, each loop a bit faster.
+## After that it keeps spawning monsters on Mew's paths, wave after wave.
+## When the wave list runs out it repeats the last wave, a bit faster each loop.
 ##
-## It uses a Timer node, so spawning stops automatically while the game is
-## paused (laser aim mode).
+## It uses a Timer node, so spawning stops by itself when the game is paused
+## (laser aim mode).
 ##
-## TODO (Ploy):
-##   Nov 11  [x] Basic spawning (works)
-##   Nov 13  [ ] Design real waves for level 1 in WAVES[1]
-##           [ ] Pick a path per enemy type? (e.g. tanks only use Path_A)
-##   Nov 14  [ ] Level 2 waves in WAVES[2] (harder + more fast monsters)
-##           [ ] Optional: emit Events.wave_started so Fah's HUD can show "Wave 3"
+## TODO Ploy:
+##  - basic spawning (done, works)
+##  - design real waves for level 1 in WAVES[1]
+##  - maybe pick a path per enemy type (e.g. tanks only on Path_A)
+##  - level 2 waves in WAVES[2] (harder, more fast monsters)
+##  - optional: emit Events.wave_started so Kong's HUD can show "Wave 3"
 
 const ENEMY_SCENES := {
 	"basic": preload("res://enemies/enemy_basic.tscn"),

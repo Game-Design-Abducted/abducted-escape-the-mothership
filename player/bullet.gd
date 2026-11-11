@@ -1,10 +1,9 @@
 extends Area2D
-## =====================================================================
-## BULLET: the player's normal weapon. OWNER: Yang
-## =====================================================================
+## Bullet, the player's normal weapon. Yang's.
+##
 ## Layer 4 (player_attack), mask 1 (walls) + 3 (enemies).
-## Hits an enemy Hitbox -> calls take_damage() on that enemy's scene root.
-## Can NOT hurt the origin (egg/commander). Only Kong's laser can.
+## When it hits an enemy Hitbox it calls take_damage() on that enemy's scene root.
+## It can NOT hurt the origin (egg/commander), only the laser can.
 
 @export var speed := 450.0
 @export var damage := 1

@@ -1,34 +1,33 @@
 class_name Enemy
 extends PathFollow2D
-## =====================================================================
-## ENEMY BASE SCRIPT. OWNER: Ploy (Enemy + Wave Programmer)
-## =====================================================================
-## Every monster is a PathFollow2D: it must be added as a CHILD of one of
-## Mew's Path2D nodes, then it walks along that path by increasing `progress`.
-## (wave_manager.gd does this for you.)
+## Enemy base script. Ploy's.
 ##
-## The 3 monster scenes all use this one script with different numbers:
+## Every monster is a PathFollow2D. It has to be a CHILD of one of Mew's
+## Path2D nodes, and it walks along by increasing `progress`.
+## (wave_manager.gd already does this for you.)
+##
+## The 3 monster scenes share this script, only the numbers differ:
 ##   enemy_basic.tscn  Monster1  normal speed, 1 HP
 ##   enemy_fast.tscn   Monster2  fast, 1 HP
 ##   enemy_tank.tscn   Monster3  slow, 3 HP
-## To change stats, select the root node of that scene and edit the Inspector.
+## To change stats, click the root node of the scene and edit the Inspector.
 ##
-## Contract (others rely on this):
-##   - Root in group "enemies"
-##   - Child `Hitbox` (Area2D): layer 3 (enemies), mask 2 (player)
-##       -> Yang's bullets find it and call take_damage() on this root
-##       -> touching the player calls player.take_damage(contact_damage)
-##   - Emits Events.enemy_killed(self) when it dies
+## Other people's code relies on these, so don't break them:
+##  - root is in group "enemies"
+##  - child `Hitbox` (Area2D) on layer 3 (enemies), mask 2 (player)
+##      Yang's bullets find it and call take_damage() on this root
+##      touching the player calls player.take_damage(contact_damage)
+##  - emits Events.enemy_killed(self) when it dies
 ##
-## TODO (Ploy):
-##   Nov 11  [x] Basic movement along a path (works)
-##   Nov 13  [ ] Make the 3 types feel different (speed/HP/movement pattern,
-##               e.g. fast one zig-zags with v_offset, tank pauses at corners)
-##           [ ] Hit flash + death sprite (textures are already exported below)
-##   Nov 14  [ ] Level 2 difficulty (see wave_manager.gd WAVES[2])
-##   ?       [ ] Decide with the group: what happens at the END of a path?
-##               Now: loop forever. Option: damage the ship (tower-defense
-##               style), e.g. emit a new signal Events.core_damaged.
+## TODO Ploy:
+##  - basic movement along a path (done, works)
+##  - make the 3 types feel different (speed, HP, movement pattern,
+##    e.g. the fast one zig-zags with v_offset, the tank stops at corners)
+##  - hit flash + death sprite (the textures are already exported below)
+##  - level 2 difficulty (see WAVES[2] in wave_manager.gd)
+##  - talk to the group about what happens at the END of a path.
+##    Right now it loops forever. Could damage the ship instead (tower defense
+##    style), e.g. a new signal Events.core_damaged.
 
 @export var speed := 80.0
 @export var max_hp := 1

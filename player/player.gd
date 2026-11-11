@@ -1,27 +1,27 @@
 class_name Player
 extends CharacterBody2D
-## =====================================================================
-## PLAYER. OWNER: Yang (Player + Combat Programmer)
-## =====================================================================
-## What already works (starter code):
-##   - 8-direction movement with WASD/arrows, blocked by walls (layer 1)
-##   - `attack` (Space/J) shoots a bullet in the facing direction
-##   - take_damage(): HP goes down, short invincibility, Events.player_died at 0
+## Player. Yang's.
 ##
-## Contract (others rely on this, don't rename):
-##   - Root is in group "player", collision layer 2 (player), mask 1 (walls)
-##   - func take_damage(amount: int)   <- Ploy's enemies call this on contact
-##   - Emits Events.player_hp_changed(hp, max_hp) and Events.player_died
-##   - Kong's laser pickup detects this body; Kong's aim mode reads global_position
+## Already working (starter code):
+##  - 8-direction movement with WASD/arrows, blocked by walls (layer 1)
+##  - `attack` (Space/J) shoots a bullet where you're facing
+##  - take_damage(): HP goes down, short invincibility, Events.player_died at 0
 ##
-## TODO (Yang):
-##   Nov 11  [ ] Decide movement feel: free 8-dir (now) or Pac-Man grid movement
-##               (4-dir, snaps to 32px corridors, buffered turns). See _get_move_dir().
-##   Nov 13  [ ] Attack cooldown / ammo? Damage numbers? Tune bullet speed.
-##           [ ] Hit flash (Player_Hit.png) + death sprite (Player_Dead.png)
-##   Nov 14  [ ] Integrate with Kong's laser pickup (just make sure the pickup
-##               detects you. It already should, via layer 2.)
-##   Nov 15  [ ] Bug fixing
+## Other people's code relies on these, so please don't rename them:
+##  - root is in group "player", collision layer 2 (player), mask 1 (walls)
+##  - func take_damage(amount: int), Ploy's enemies call it on contact
+##  - emits Events.player_hp_changed(hp, max_hp) and Events.player_died
+##  - laser_pickup.gd detects this body, and aim_mode.gd reads global_position (both are yours too now)
+##
+## TODO Yang:
+##  - decide how movement should feel: free 8-dir (what we have) or
+##    Pac-Man grid movement (4-dir, snaps to the 32px corridors, buffered
+##    turns). See _get_move_dir().
+##  - attack cooldown / ammo? damage numbers? tune bullet speed
+##  - hit flash (Player_Hit.png) + death sprite (Player_Dead.png)
+##  - check the laser pickup (laser_pickup.gd) works with your player (it should already,
+##    it detects you through layer 2)
+##  - bug fixing
 
 @export var speed := 180.0
 @export var max_hp := 3
