@@ -1,9 +1,13 @@
 # GitHub asks these people for a review when a PR changes a matching file.
 # The last matching line wins. Ownership table: README.md, "Who owns what".
 #
-# Only the shared files are listed. To add a teammate's files, add a line
-# such as:   /player/   @their-github-name
-# (they must be a member of the org with write access, or GitHub ignores the line)
+# The first line makes every PR need the owner's approval. The lines below it
+# are the shared files, kept listed so they stay visible. To let a teammate
+# co-approve their own area, add a line such as:
+#   /player/   @waritctd @their-github-name
+# (they must have write access to the repo, or GitHub ignores the line)
+
+*                     @waritctd
 
 /project.godot        @waritctd
 /autoload/events.gd   @waritctd
