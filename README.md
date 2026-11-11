@@ -20,17 +20,10 @@ Each folder has one owner and a `GUIDE.md` with that person's tasks and deadline
 |---|---|---|
 | [`levels/`](levels/GUIDE.md) | **Mew** | Level 1 & 2 mazes, walls, enemy paths, spawn/laser spots |
 | [`player/`](player/GUIDE.md) | **Yang** | Player movement, shooting, HP, bullet |
-| [`enemies/`](enemies/GUIDE.md) | **Ploy** | 3 monster types, wave manager. **Also the integrator** (see below) |
+| [`enemies/`](enemies/GUIDE.md) | **Ploy** | 3 monster types, wave manager. **Also the integrator**  |
 | [`laser/`](laser/GUIDE.md) + [`game/`](game/GUIDE.md) + `autoload/game_state.gd` | **Kong** | Laser pickup, aim/shoot, Egg & Commander, win/lose, level flow |
 | [`ui/`](ui/GUIDE.md) + `assets/` + `art_source/` | **Fah** | Sprites, title/story/end screens, HUD, sounds, effects |
-| `autoload/events.gd`, `project.godot`, `docs/` | **shared, gatekept by Ploy** | Ask Ploy before changing |
-
-### Integrator: Ploy
-- Reviews and merges everyone's Pull Requests into `main` (at least once a day).
-- Is the only one who changes `project.godot` (input map, autoloads, layers). Ask Ploy if you need something added.
-- Runs **Integration Day (Nov 13)**: merge all branches, play the full game, write a bug list in the group chat.
-- Makes the final export/build on Nov 15.
-| `sandbox/` | everyone | Your own test scenes. Name them `yourname_*.tscn` |
+| `autoload/events.gd`, `project.godot`, `docs/` | shared, don't make any change to these files na ja pls |
 
 ## Project layout
 
