@@ -19,7 +19,7 @@ Design doc: [docs/design.md](docs/design.md) · Shared rules (collision layers, 
 
 VS Code needs the **Godot Tools** extension (`geequlim.godot-tools`). Set the Godot path once under *Settings → Godot Tools → Editor Path*.
 
-## Godot basics (new to Godot? read this)
+## Godot basics
 
 - **`.tscn`** = a **scene**: a tree of nodes saved as text (a player, a monster, a menu). Edit it in the Godot editor, not by hand. Scenes can contain other scenes.
 - **`.gd`** = a **GDScript** file: the code that makes a node do things. It is attached to a node in a scene.
