@@ -81,13 +81,14 @@ Don't `get_node()` into someone else's scene. Use a signal.
 |---|---|
 | `move_up/down/left/right` | WASD + arrow keys |
 | `attack` | Space, J |
-| `fire_laser` | Left mouse, K |
+| `fire_laser` | Left mouse, K (`attack` also fires the laser while aiming) |
 
 ## 8. Pausing (laser aim mode)
 
 - Aim mode sets `get_tree().paused = true`.
 - Anything that must keep running while paused (aim line, HUD, menus) uses **Process Mode = Always**.
 - Everything else (player, enemies, timer) uses the default (**Inherit**), so it freezes automatically.
+- Exception: the Level 2 Commander uses **Always**, so it keeps walking while the player aims.
 
 ## 9. Git rules
 
@@ -95,4 +96,4 @@ Don't `get_node()` into someone else's scene. Use a signal.
 2. **Only edit files in your own folder** (see README). To use someone else's scene, *instance* it. Don't open it and change it.
 3. Pull `main` every morning. Open a PR at least once a day, even if the work is small. **Ploy reviews and merges PRs.**
 4. Before you commit: open the project and press **F5**. If it doesn't run, don't push.
-5. Never commit the `.godot/` folder (already in `.gitignore`).
+5. Never commit the `.godot/` folder (already in `.gitignore`). **Do** commit the `.import` file Godot creates next to every new image or sound.

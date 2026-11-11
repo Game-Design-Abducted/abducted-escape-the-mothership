@@ -1,9 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://b8voaux2516k3"]
 
 [ext_resource type="Script" path="res://game/game.gd" id="1_game"]
 [ext_resource type="Script" path="res://enemies/wave_manager.gd" id="2_waves"]
 [ext_resource type="Script" path="res://laser/laser_manager.gd" id="3_laser"]
-[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://b3x2mowpqj4dd" path="res://ui/hud.tscn" id="4_hud"]
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_game")

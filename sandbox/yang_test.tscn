@@ -1,11 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://dwwn8retnnj5d"]
 
-[ext_resource type="PackedScene" path="res://levels/level_1.tscn" id="1_level"]
-[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://iwyds4rsw7h5" path="res://levels/level_1.tscn" id="1_level"]
+[ext_resource type="PackedScene" uid="uid://xcd8x2mqp2gp" path="res://player/player.tscn" id="2_player"]
 
 [node name="YangTest" type="Node2D"]
 
 [node name="Level1" parent="." instance=ExtResource("1_level")]
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
-position = Vector2(640, 560)
+position = Vector2(400, 480)

@@ -1,9 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://d14hr86o8dhxk"]
 
 [ext_resource type="Script" path="res://enemies/enemy.gd" id="1_enemy"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Monster3.png" id="2_normal"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Monster3_Hit.png" id="3_hit"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Monster3_Dead.png" id="4_dead"]
+[ext_resource type="Texture2D" uid="uid://b44lqdnnrx45t" path="res://assets/sprites/Monster3.png" id="2_normal"]
+[ext_resource type="Texture2D" uid="uid://dx0egu5v7oc3s" path="res://assets/sprites/Monster3_Hit.png" id="3_hit"]
+[ext_resource type="Texture2D" uid="uid://dpsr41jkme7qf" path="res://assets/sprites/Monster3_Dead.png" id="4_dead"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hitbox"]
 radius = 16.0

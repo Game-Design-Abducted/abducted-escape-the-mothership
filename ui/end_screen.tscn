@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://cfh177fufkgrw"]
 
 [ext_resource type="Script" path="res://ui/end_screen.gd" id="1_end"]
-[ext_resource type="Texture2D" path="res://assets/home/Background_wMountain.jpg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://q3bfr5bgdu7y" path="res://assets/home/Background_wMountain.jpg" id="2_bg"]
 
 [node name="EndScreen" type="Control"]
 layout_mode = 3

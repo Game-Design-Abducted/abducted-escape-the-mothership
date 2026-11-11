@@ -1,9 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://bollr6qfgyg18"]
 
 [ext_resource type="Script" path="res://laser/origins/origin.gd" id="1_origin"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Egg.png" id="2_normal"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Egg_Hit.png" id="3_hit"]
-[ext_resource type="Texture2D" path="res://assets/sprites/Egg_Dead.png" id="4_dead"]
+[ext_resource type="Texture2D" uid="uid://4am4d6hndbed" path="res://assets/sprites/Egg.png" id="2_normal"]
+[ext_resource type="Texture2D" uid="uid://j0sn1kwkl1jc" path="res://assets/sprites/Egg_Hit.png" id="3_hit"]
+[ext_resource type="Texture2D" uid="uid://bh31rwcf1dhek" path="res://assets/sprites/Egg_Dead.png" id="4_dead"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_origin"]
 radius = 44.0

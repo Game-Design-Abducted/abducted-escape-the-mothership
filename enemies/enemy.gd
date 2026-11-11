@@ -38,8 +38,11 @@ extends PathFollow2D
 @export var hit_texture: Texture2D
 @export var dead_texture: Texture2D
 
+const CONTACT_CHECK_INTERVAL := 0.2
+
 var hp: int
 var _dead := false
+var _contact_tick := CONTACT_CHECK_INTERVAL
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var hitbox: Area2D = $Hitbox
@@ -58,6 +61,14 @@ func _process(delta: float) -> void:
 	if _dead:
 		return
 	progress += speed * delta
+	# body_entered only fires at the moment of first touch, so re-check a few
+	# times per second. Otherwise a player who stays on top of a monster (or
+	# touched it while invincible) would never be hurt again.
+	_contact_tick -= delta
+	if _contact_tick <= 0.0:
+		_contact_tick = CONTACT_CHECK_INTERVAL
+		for body in hitbox.get_overlapping_bodies():
+			_on_hitbox_body_entered(body)
 
 
 func take_damage(amount: int) -> void:

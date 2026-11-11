@@ -1,7 +1,10 @@
 ; Engine configuration file.
-; SHARED FILE. Merge conflicts here break the project for everyone.
-; Input actions, autoloads and collision-layer names are already set up below.
-; Only Ploy (integrator) edits this file. Need a new input action or autoload? Ask Ploy.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -22,7 +25,6 @@ GameState="*res://autoload/game_state.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [input]
 
@@ -74,7 +76,7 @@ fire_laser={
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.1, 0.04, 0.2, 1)
-textures/canvas_textures/default_texture_filter=0

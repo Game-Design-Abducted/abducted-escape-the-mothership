@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://ccd2kx8pn3ew2"]
 
 [ext_resource type="Script" path="res://ui/story_screen.gd" id="1_story"]
-[ext_resource type="Texture2D" path="res://assets/home/Background.jpg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://cdpk7elhx8nq4" path="res://assets/home/Background.jpg" id="2_bg"]
 
 [node name="StoryScreen" type="Control"]
 layout_mode = 3

@@ -6,7 +6,7 @@ extends CanvasLayer
 ##
 ##   hearts  <- Events.player_hp_changed(hp, max_hp)
 ##   timer   <- Events.time_changed(seconds_left)
-##   laser   <- Events.laser_countdown_changed / laser_spawned / laser_picked_up / laser_fired
+##   laser   <- Events.laser_charge_changed / laser_spawned / laser_picked_up / laser_fired
 ##   message <- Events.level_finished(won)
 ##
 ## TODO Kong (ask Fah for the art):
@@ -28,32 +28,35 @@ func _ready() -> void:
 	message_label.text = ""
 	Events.player_hp_changed.connect(_on_hp_changed)
 	Events.time_changed.connect(_on_time_changed)
-	Events.laser_countdown_changed.connect(_on_laser_countdown)
+	Events.laser_charge_changed.connect(_on_laser_charge)
 	Events.laser_spawned.connect(func(_pos): laser_label.text = "LASER READY! Grab it!")
-	Events.laser_picked_up.connect(func(): message_label.text = "AIM AT THE ORIGIN - CLICK TO FIRE")
+	Events.laser_picked_up.connect(func(): message_label.text = "PRESS SPACE WHEN THE BEAM CROSSES THE TARGET")
 	Events.laser_fired.connect(_on_laser_fired)
 	Events.level_finished.connect(_on_level_finished)
 
 
 func _on_hp_changed(hp: int, max_hp: int) -> void:
-	for child in hearts.get_children():
-		child.queue_free()
-	for i in max_hp:
+	# Create heart icons only when the count changes, then just swap textures
+	while hearts.get_child_count() < max_hp:
 		var icon := TextureRect.new()
-		icon.texture = HEART if i < hp else HEART_LOST
 		icon.custom_minimum_size = Vector2(64, 64)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		hearts.add_child(icon)
+	for i in hearts.get_child_count():
+		var heart := hearts.get_child(i) as TextureRect
+		heart.visible = i < max_hp
+		heart.texture = HEART if i < hp else HEART_LOST
 
 
 func _on_time_changed(seconds_left: float) -> void:
-	var s := int(ceil(seconds_left))
+	var s := ceili(seconds_left)
+	@warning_ignore("integer_division")
 	time_label.text = "%d:%02d" % [s / 60, s % 60]
 
 
-func _on_laser_countdown(seconds_left: float) -> void:
-	laser_label.text = "Laser in %d s" % int(ceil(seconds_left))
+func _on_laser_charge(kills: int, kills_needed: int) -> void:
+	laser_label.text = "Laser charge: %d / %d kills" % [kills, kills_needed]
 
 
 func _on_laser_fired(hit: bool) -> void:
