@@ -26,7 +26,6 @@ VS Code needs the **Godot Tools** extension (`geequlim.godot-tools`). Set the Go
 - **Node** = one building block (sprite, collision shape, timer...). **Signal** = a node announcing "something happened"; other code listens. Here the shared ones live in `autoload/events.gd`.
 - Everyday use: double-click a `.tscn` in the **FileSystem** dock (bottom-left) to open it → pick a node in the **Scene** dock (top-left) → change its settings in the **Inspector** (right) → click the 📜 icon to open or attach its `.gd`.
 - **Save** with Ctrl/Cmd+S, then press **F6** to test just your scene. Red text in the **Output** / **Debugger** panel at the bottom = an error to fix.
-- Only edit the files you own (see "Who owns what"). Need a change in someone else's file or in `events.gd`, `project.godot`, `docs/`? Ask Ploy.
 
 ## Who owns what
 
@@ -119,13 +118,6 @@ You depend on almost nobody, so you are the one everyone else is waiting on firs
 `PlayerStart`, `OriginSpot`, `OriginPath`, `Entities` by name. Do **not rename** nodes (see `contracts.md`), and merge a first
 rough maze early, even if it's ugly, so the others can test on it.
 
-### If you're blocked, in this order
-
-1. **Use the starter version.** It's already in the repo and works.
-2. **Fake the other side** in your own `sandbox/yourname_*.tscn` (a dummy node, or a signal fired by hand). Never edit someone else's file to unblock yourself.
-3. **Ask for a stub:** a version with the agreed node/signal/function names that may do nothing yet. That's enough for you to keep going.
-4. **Ask in the group chat.** If it's still stuck after a few hours, tell Ploy (integrator), who can reorder merges.
-
 ## Project layout and who owns each file
 
 ```
@@ -209,29 +201,10 @@ title_screen ──START──► story_screen ──► game.tscn ──► (wi
        they talk only through  Events.*  signals  +  GameState
 ```
 
-## Testing (all Ploy)
+## Git workflow for commit (2 ways)
+### 1. Github Desktop
 
-**Ploy does all the testing.** Everyone else just builds their part and opens a PR.
-
-What Ploy does:
-- Runs the **automatic test** before every merge. It plays the whole game loop by itself (about 15 seconds) and prints PASS/FAIL for each step:
-
-  ```bash
-  godot --headless --path . -s tools/smoke_test.gd
-  ```
-
-  (Replace `godot` with the full path to your Godot .exe if needed.) It must end with **ALL PASSED**.
-- Plays the game by hand after each merge: title → Level 1 → Level 2 → ending, and also a game over.
-- Keeps the **bug list** in the group chat, with the owner of each bug (see "Who owns what"), and checks the fix after it's merged.
-- On a PR that changes a rule on purpose (for example how the laser charges), updates `tools/smoke_test.gd` so the test matches the new rule.
-- Does the final playtest and export.
-
-What everyone else does: nothing special. You don't need to run the smoke test or write tests. It's still nice to press **F5** (or **F6** on your own scene) so you can see your own change working, and to
-fix the bugs Ploy assigns to you.
-
-## Git workflow (no terminal needed)
-
-Use **[GitHub Desktop](https://desktop.github.com)** (free). Godot has no built-in git, and this is the easiest way. One-time setup: install it, sign in, *File → Clone repository* → pick this repo.
+Use **[GitHub Desktop](https://desktop.github.com)**. Setup: install it, sign in, *File → Clone repository* → pick this repo.
 
 **Start your work**
 1. Top bar → *Current Branch* → *New Branch* → name it `yourname/feature-name` (for example `mew/level-1-tiles`).
@@ -248,7 +221,7 @@ Use **[GitHub Desktop](https://desktop.github.com)** (free). Godot has no built-
 
 Never commit to `main` (the branch name in the top bar should be yours).
 
-<details><summary>Prefer the terminal? Same thing as commands</summary>
+### 2. Git from terminal
 
 ```bash
 git checkout main && git pull
