@@ -73,10 +73,10 @@ The whole loop is playable from start to finish: title → intro story → Level
 | Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). Waves designed for Level 1 and Level 2. Left: death sprite. |
 | Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Left: destroy animation, tuning. |
 | `game.gd` wire-up | Ploy | **Done.** |
-| End screen | Ploy | **Working**, plain. Left: win / lose art and sounds. |
+| End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Left: animation, if Fah wants to add any. |
 | Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR (see [Testing](#testing-all-ploy)). |
 | Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
-| Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). Only the title screen plays sound so far; the other owners still need to hook up their sounds. |
+| Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). Only the title screen and end screen play sound so far; the other owners still need to hook up their sounds. |
 | Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
 | Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel, hit flash / death sprite, sounds. |
 | Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: nicer beam, sounds, tuning. |
