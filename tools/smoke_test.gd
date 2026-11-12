@@ -309,6 +309,20 @@ func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
 	return false
 
 
+## File name of the picture on the end screen ("" if there is none)
+func _end_art() -> String:
+	var art := current_scene.get_node_or_null("VBox/Art") as TextureRect
+	return art.texture.resource_path.get_file() if art and art.texture else ""
+
+
+## "lose.wav playing" style description of the end screen's sound ("" if there is none)
+func _end_sound() -> String:
+	var jingle := current_scene.get_node_or_null("Jingle") as AudioStreamPlayer
+	if jingle == null or jingle.stream == null:
+		return ""
+	return "%s %s" % [jingle.stream.resource_path.get_file(), "playing" if jingle.playing else "silent"]
+
+
 func _press_any_key() -> void:
 	for pressed in [true, false]:
 		var ev := InputEventKey.new()
@@ -452,6 +466,8 @@ func _run() -> void:
 	# Lose screen: RETRY restarts the level you lost on
 	var retry: Button = current_scene.get_node("VBox/RetryButton")
 	_check("lose screen shows RETRY", retry.visible)
+	_check("lose screen shows the hurt astronaut", _end_art() == "Player_Hit.png", _end_art())
+	_check("lose screen plays the lose sound", _end_sound() == "lose.wav playing", _end_sound())
 	retry.pressed.emit()
 	var ok: bool = await _wait_for_scene("Game")
 	await process_frame
@@ -477,6 +493,8 @@ func _run() -> void:
 	_check("ending story leads to the win screen", ok and _state.last_result_won, current_scene.name)
 	await process_frame
 	_check("win screen has no RETRY", ok and not current_scene.get_node("VBox/RetryButton").visible)
+	_check("win screen shows the spaceship", _end_art() == "Spaceship.png", _end_art())
+	_check("win screen plays the win sound", _end_sound() == "win.wav playing", _end_sound())
 	if ok:
 		current_scene.get_node("VBox/MenuButton").pressed.emit()
 	ok = await _wait_for_scene("TitleScreen")
