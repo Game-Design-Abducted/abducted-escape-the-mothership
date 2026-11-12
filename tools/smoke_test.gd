@@ -299,17 +299,81 @@ func _level_2_checks() -> void:
 	await process_frame
 
 
+## Waits (up to `seconds`) until the scene with this root name is showing
+func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
+	var deadline := Time.get_ticks_msec() + int(seconds * 1000.0)
+	while Time.get_ticks_msec() < deadline:
+		if current_scene != null and current_scene.name == scene_name:
+			return true
+		await process_frame
+	return false
+
+
+func _press_any_key() -> void:
+	for pressed in [true, false]:
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_ENTER
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		await process_frame
+
+
+## Every level must keep the node names from docs/contracts.md section 5,
+## because game.gd finds them by name. Returns what is missing or wrong.
+func _level_problems(scene_path: String, needs_origin_path: bool) -> Array:
+	var problems := []
+	var level: Node = load(scene_path).instantiate()
+	for entry in [["Walls", "TileMapLayer"], ["Paths", "Node2D"], ["PlayerStart", "Marker2D"],
+			["OriginSpot", "Marker2D"], ["OriginPath", "Path2D"], ["LaserSpawns", "Node2D"], ["Entities", "Node2D"]]:
+		var node := level.get_node_or_null(entry[0])
+		if node == null:
+			problems.append("no %s" % entry[0])
+		elif not node.is_class(entry[1]):
+			problems.append("%s is not a %s" % entry)
+	if problems.is_empty():
+		var routes := 0
+		for path in level.get_node("Paths").get_children():
+			if path is Path2D and path.curve != null and path.curve.point_count >= 2:
+				routes += 1
+			else:
+				problems.append("Paths/%s has no route drawn" % path.name)
+		if routes == 0:
+			problems.append("no enemy route under Paths")
+		var spots := 0
+		for spot in level.get_node("LaserSpawns").get_children():
+			if spot is Marker2D:
+				spots += 1
+		if spots == 0:
+			problems.append("no Marker2D under LaserSpawns")
+		if needs_origin_path:
+			var curve: Curve2D = level.get_node("OriginPath").curve
+			if curve == null or curve.point_count < 2:
+				problems.append("OriginPath has no route drawn")
+			elif curve.get_point_position(0).distance_to(curve.get_point_position(curve.point_count - 1)) > 1.0:
+				problems.append("OriginPath is not a closed loop (last point must be on the first)")
+	level.free()
+	return problems
+
+
+func _level_contract_checks() -> void:
+	var problems := _level_problems("res://levels/level_1.tscn", false)
+	_check("level 1 has every node from docs/contracts.md", problems.is_empty(), problems)
+	problems = _level_problems("res://levels/level_2.tscn", true)
+	_check("level 2 has every node from docs/contracts.md and a closed Commander route", problems.is_empty(), problems)
+
+
 func _run() -> void:
 	_events = root.get_node("Events")
 	_state = root.get_node("GameState")
-	# Watchdog: if a step crashes, the test would wait forever. Stop after 90 s.
-	create_timer(90.0).timeout.connect(func():
-		print("FAIL  test did not finish within 90 s (a step crashed, see the errors above)")
+	# Watchdog: if a step crashes, the test would wait forever. Stop after 150 s.
+	create_timer(150.0).timeout.connect(func():
+		print("FAIL  test did not finish within 150 s (a step crashed, see the errors above)")
 		quit(2))
 	await process_frame
 
 	await _enemy_type_checks()
 	await _level_2_checks()
+	_level_contract_checks()
 
 	# ---------- Level 1 ----------
 	var game: Node = await _load_game(1)
@@ -383,6 +447,52 @@ func _run() -> void:
 	await create_timer(2.2).timeout
 	_check("time up leads to the lose screen", current_scene.name == "EndScreen" and not _state.last_result_won,
 			current_scene.name)
+
+	# ---------- Screens and the rest of the flow ----------
+	# Lose screen: RETRY restarts the level you lost on
+	var retry: Button = current_scene.get_node("VBox/RetryButton")
+	_check("lose screen shows RETRY", retry.visible)
+	retry.pressed.emit()
+	var ok: bool = await _wait_for_scene("Game")
+	await process_frame
+	_check("RETRY restarts the same level", ok and _state.current_level == 2 and _state.running,
+			"level %d" % _state.current_level)
+	if not ok:
+		game = await _load_game(2)   # so the checks below still have a level to run in
+
+	# Player death loses
+	player = get_first_node_in_group("player")
+	player.take_damage(player.max_hp)
+	ok = await _wait_for_scene("EndScreen")
+	_check("player death leads to the lose screen", ok and not _state.last_result_won, current_scene.name)
+
+	# Level 2 win: ending story, then the win screen, then back to the title
+	game = await _load_game(2)
+	get_first_node_in_group("origin").take_laser_hit()
+	ok = await _wait_for_scene("StoryScreen")
+	_check("level 2 win leads to the ending story", ok and _state.story_id == "ending", _state.story_id)
+	await create_timer(0.8).timeout   # the story page ignores keys for its first 0.6 s
+	await _press_any_key()
+	ok = await _wait_for_scene("EndScreen")
+	_check("ending story leads to the win screen", ok and _state.last_result_won, current_scene.name)
+	await process_frame
+	_check("win screen has no RETRY", ok and not current_scene.get_node("VBox/RetryButton").visible)
+	if ok:
+		current_scene.get_node("VBox/MenuButton").pressed.emit()
+	ok = await _wait_for_scene("TitleScreen")
+	_check("MAIN MENU leads to the title screen", ok, current_scene.name)
+
+	# Title: START begins a new game at level 1
+	if ok:
+		current_scene.get_node("StartButton").pressed.emit()
+	ok = await _wait_for_scene("StoryScreen")
+	_check("START leads to the intro story", ok and _state.story_id == "intro" and _state.current_level == 1,
+			"%s, level %d" % [_state.story_id, _state.current_level])
+	await create_timer(0.8).timeout
+	await _press_any_key()
+	ok = await _wait_for_scene("Game")
+	await process_frame
+	_check("intro story leads to level 1", ok and _state.current_level == 1 and _state.running, current_scene.name)
 
 	print("")
 	print("ALL PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures)
