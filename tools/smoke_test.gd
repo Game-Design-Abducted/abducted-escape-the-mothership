@@ -482,6 +482,14 @@ func _run() -> void:
 	ok = await _wait_for_scene("TitleScreen")
 	_check("MAIN MENU leads to the title screen", ok, current_scene.name)
 
+	# Title: the hover sound is for the mouse only (the button holds keyboard focus from the start)
+	if ok:
+		var hover_sfx: AudioStreamPlayer = current_scene.get_node("Sfx")
+		current_scene.get_node("StartButton").focus_entered.emit()
+		_check("title: keyboard focus does not play the hover sound", hover_sfx.stream == null)
+		current_scene.get_node("StartButton").mouse_entered.emit()
+		_check("title: mouse hover plays the hover sound", hover_sfx.stream != null)
+
 	# Title: START begins a new game at level 1
 	if ok:
 		current_scene.get_node("StartButton").pressed.emit()
