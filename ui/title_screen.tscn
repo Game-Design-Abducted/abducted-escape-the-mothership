@@ -1,14 +1,14 @@
 [gd_scene format=3 uid="uid://bewr3toarrwsc"]
 
-[ext_resource type="Script" uid="uid://dj1t81hfynvgo" path="res://ui/title_screen.gd" id="1_title"]
+[ext_resource type="Script" path="res://ui/title_screen.gd" id="1_title"]
 [ext_resource type="Texture2D" uid="uid://cdpk7elhx8nq4" path="res://assets/home/Background.jpg" id="2_bg"]
 [ext_resource type="Texture2D" uid="uid://ccmtjkdqs4ixw" path="res://assets/home/Star.png" id="3_star"]
 [ext_resource type="Texture2D" uid="uid://b2vxm0sh1b8tr" path="res://assets/home/Light.png" id="4_light"]
 [ext_resource type="Texture2D" uid="uid://dlpgpmvnrsu80" path="res://assets/home/Mountain.png" id="5_mountain"]
 [ext_resource type="Texture2D" uid="uid://cw2btovyvyapi" path="res://assets/sprites/Spaceship.png" id="6_ufo"]
 [ext_resource type="Texture2D" uid="uid://dfk86mnvjscnb" path="res://assets/sprites/Player.png" id="7_player"]
-[ext_resource type="FontFile" uid="uid://bkqrpedydo6ow" path="res://assets/fonts/Minecraft.ttf" id="8_rg5jq"]
-[ext_resource type="FontFile" uid="uid://ciso3bn0bjmly" path="res://assets/fonts/VT323.ttf" id="9_jprmh"]
+[ext_resource type="FontFile" uid="uid://b2itlmbmiuj8x" path="res://assets/fonts/Minecraft.ttf" id="8_rg5jq"]
+[ext_resource type="FontFile" uid="uid://dhjbpar0jp4ov" path="res://assets/fonts/VT323.ttf" id="9_jprmh"]
 
 [sub_resource type="StyleBoxFlat" id="btn_normal"]
 bg_color = Color(0, 0, 0, 1)
