@@ -1,5 +1,5 @@
 extends Node2D
-## Game scene script. Kong's. Builds and runs ONE level.
+## Game scene script. Ploy's. Builds and runs ONE level.
 ##
 ## This is the only script that knows about everyone's pieces. In order it:
 ##   1. loads Mew's level for GameState.current_level
@@ -13,7 +13,7 @@ extends Node2D
 ## Press F6 on game.tscn to play the current level directly (level 1 by default).
 ## To jump straight to level 2, change `debug_start_level` in the Inspector.
 ##
-## TODO Kong: when two systems need to talk to each other, wire them up here
+## TODO Ploy: when two systems need to talk to each other, wire them up here
 ## instead of letting them reach into each other's code.
 
 const LEVEL_SCENES := {
