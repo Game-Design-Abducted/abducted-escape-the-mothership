@@ -195,6 +195,110 @@ func _enemy_type_checks() -> void:
 	await process_frame
 
 
+## Monsters per second over one pass of a level's wave table
+func _spawn_rate(waves: Array) -> float:
+	var count := 0
+	var seconds := 0.0
+	for w in waves:
+		count += w["count"]
+		seconds += 0.5 + (w["count"] - 1) * w["interval"] + w["pause"]
+	return count / seconds
+
+
+## Level 2: the Commander must be hard to time (speed changes, turns around)
+## but fair (stays on its path, never faster than its top speed, never stops).
+func _level_2_checks() -> void:
+	var path := Path2D.new()
+	path.position = Vector2(100, 50)   # not at 0,0, so a mix-up of local and global positions shows
+	path.curve = Curve2D.new()
+	for p in [Vector2(0, 0), Vector2(600, 0), Vector2(600, 600), Vector2(0, 600), Vector2(0, 0)]:
+		path.curve.add_point(p)   # closed square, like Mew's OriginPath
+	root.add_child(path)
+	var dt := 1.0 / 60.0
+	var max_off := 0.0
+	var turns_min := 9999
+	var turns_max := 0
+	var v_min := INF
+	var v_max := 0.0
+	var base := 0.0
+	var slow = null
+	var fast = null
+	for run_seed in [1, 2, 3, 4, 5, 6]:   # several fixed "random" runs, the same every time
+		seed(run_seed)
+		var commander: Node2D = load("res://laser/origins/commander.tscn").instantiate()
+		root.add_child(commander)
+		commander.set_process(false)   # only the loop below moves it
+		commander.follow_path(path)
+		slow = commander.get("speed_min_factor")
+		fast = commander.get("speed_max_factor")
+		base = commander.move_speed
+		var turns := 0
+		commander._process(dt)
+		var prev: Vector2 = commander.global_position
+		var prev_move := Vector2.ZERO
+		for i in 1800:   # 30 s
+			commander._process(dt)
+			var pos: Vector2 = commander.global_position
+			var move := pos - prev
+			max_off = maxf(max_off, pos.distance_to(path.to_global(path.curve.get_closest_point(path.to_local(pos)))))
+			if move.dot(prev_move) < 0.0:
+				turns += 1
+			if is_equal_approx(pos.x, prev.x) or is_equal_approx(pos.y, prev.y):   # skip corner frames
+				v_min = minf(v_min, move.length() / dt)
+				v_max = maxf(v_max, move.length() / dt)
+			prev = pos
+			prev_move = move
+		turns_min = mini(turns_min, turns)
+		turns_max = maxi(turns_max, turns)
+		commander.queue_free()
+	randomize()   # back to real randomness for the rest of the test
+	if slow == null or fast == null:
+		_check("Commander has speed_min_factor / speed_max_factor settings", false)
+	else:
+		_check("Commander stays on its path", max_off < 1.0, "max %.1f px off" % max_off)
+		_check("Commander turns around sometimes, but does not jitter", turns_min >= 1 and turns_max <= 30,
+				"%d to %d turns per 30 s" % [turns_min, turns_max])
+		_check("Commander speeds up and slows down", v_min < base * 0.9 and v_max > base * 1.1,
+				"%.0f to %.0f px/s, base %.0f" % [v_min, v_max, base])
+		_check("Commander never goes past its top speed", v_max <= base * fast + 1.0, "max %.0f px/s" % v_max)
+		_check("Commander never stops or crawls", v_min >= base * slow - 1.0, "min %.0f px/s" % v_min)
+	path.queue_free()
+
+	# The last wave repeats faster and faster. It must level off, or the screen floods.
+	var flood_path := Path2D.new()
+	flood_path.curve = Curve2D.new()
+	flood_path.curve.add_point(Vector2.ZERO)
+	flood_path.curve.add_point(Vector2(100, 0))
+	root.add_child(flood_path)
+	var manager := Node.new()
+	manager.set_script(load("res://enemies/wave_manager.gd"))
+	root.add_child(manager)
+	var flood_paths: Array[Path2D] = [flood_path]
+	manager.setup(flood_paths, 2)
+	for i in 60:   # far more wave loops than fit in 3 minutes
+		manager._start_next_wave()
+	var floor_factor = manager.get("min_speed_factor")
+	_check("repeating waves stop getting faster at min_speed_factor",
+			floor_factor != null and floor_factor >= 0.3 and manager._speed_factor >= floor_factor - 0.001,
+			"factor %.3f, floor %s" % [manager._speed_factor, str(floor_factor)])
+	manager.queue_free()
+	flood_path.queue_free()
+
+	var waves: Script = load("res://enemies/wave_manager.gd")
+	var rate_1 := _spawn_rate(waves.WAVES[1])
+	var rate_2 := _spawn_rate(waves.WAVES[2])
+	_check("level 2 waves spawn faster than level 1", rate_2 > rate_1 * 1.3, "%.2f vs %.2f monsters/s" % [rate_2, rate_1])
+	var fast_2 := 0
+	var total_2 := 0
+	for w in waves.WAVES[2]:
+		total_2 += w["count"]
+		if w["type"] == "fast":
+			fast_2 += w["count"]
+	_check("level 2 has at least 6 waves and a third of the named monsters are fast",
+			waves.WAVES[2].size() >= 6 and fast_2 * 3 >= total_2, "%d waves, %d/%d fast" % [waves.WAVES[2].size(), fast_2, total_2])
+	await process_frame
+
+
 func _run() -> void:
 	_events = root.get_node("Events")
 	_state = root.get_node("GameState")
@@ -205,6 +309,7 @@ func _run() -> void:
 	await process_frame
 
 	await _enemy_type_checks()
+	await _level_2_checks()
 
 	# ---------- Level 1 ----------
 	var game: Node = await _load_game(1)

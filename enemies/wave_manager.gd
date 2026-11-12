@@ -13,7 +13,7 @@ extends Node
 ##  - basic spawning (done, works)
 ##  - design real waves for level 1 in WAVES[1] (done)
 ##  - maybe pick a path per enemy type (e.g. tanks only on Path_A)
-##  - level 2 waves in WAVES[2] (harder, more fast monsters)
+##  - level 2 waves in WAVES[2] (done: denser, more fast monsters)
 ##  - optional: emit Events.wave_started so Kong's HUD can show "Wave 3"
 
 const ENEMY_SCENES := {
@@ -35,15 +35,21 @@ const WAVES := {
 		{"type": "mixed", "count": 14, "interval": 1.0, "pause": 5.0},
 	],
 	2: [
-		{"type": "mixed", "count": 8, "interval": 1.0, "pause": 2.0},
-		{"type": "fast", "count": 8, "interval": 0.7, "pause": 2.0},
-		{"type": "tank", "count": 4, "interval": 1.5, "pause": 3.0},
-		{"type": "mixed", "count": 15, "interval": 0.6, "pause": 3.0},
+		{"type": "mixed", "count": 8, "interval": 1.2, "pause": 3.0},
+		{"type": "fast", "count": 8, "interval": 0.8, "pause": 3.0},
+		{"type": "tank", "count": 4, "interval": 1.8, "pause": 3.0},
+		{"type": "fast", "count": 10, "interval": 0.6, "pause": 3.0},
+		{"type": "mixed", "count": 14, "interval": 0.8, "pause": 3.0},
+		{"type": "tank", "count": 5, "interval": 1.4, "pause": 2.0},     # tanks first
+		{"type": "fast", "count": 12, "interval": 0.5, "pause": 3.0},    # then fast ones
+		{"type": "mixed", "count": 18, "interval": 0.6, "pause": 3.0},
 	],
 }
 
 ## Every time the wave list loops, intervals are multiplied by this
 @export var loop_speedup := 0.85
+## ...but never below this, or the last minute floods the map with monsters
+@export var min_speed_factor := 0.4
 
 var _paths: Array[Path2D] = []
 var _waves: Array = []
@@ -70,7 +76,7 @@ func _start_next_wave() -> void:
 	_wave_index += 1
 	if _wave_index >= _waves.size():
 		_wave_index = _waves.size() - 1   # keep repeating the hardest wave
-		_speed_factor *= loop_speedup
+		_speed_factor = maxf(_speed_factor * loop_speedup, min_speed_factor)
 	_left_in_wave = _waves[_wave_index]["count"]
 	Events.wave_started.emit(_wave_index + 1)
 	_timer.start(0.5)
