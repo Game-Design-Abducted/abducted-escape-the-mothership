@@ -64,6 +64,42 @@ Go top to bottom. A file only needs things from **earlier rows**, so if you're o
 
 Every row already has a working **starter version** in the repo, so you can start your row today and swap in the real thing as earlier rows improve. The names of nodes, signals and functions are fixed in [docs/contracts.md](docs/contracts.md); don't rename them.
 
+## Progress so far (13 Nov 2026)
+
+The whole loop is playable from start to finish: title → intro story → Level 1 → story → Level 2 → ending → win / lose screen.
+
+| Piece | Owner | Status |
+|---|---|---|
+| Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). Waves designed for Level 1 and Level 2. Left: death sprite. |
+| Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Left: destroy animation, tuning. |
+| `game.gd` wire-up | Ploy | **Done.** |
+| End screen | Ploy | **Working**, plain. Left: win / lose art and sounds. |
+| Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR (see [Testing](#testing-all-ploy)). |
+| Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
+| Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). Only the title screen plays sound so far; the other owners still need to hook up their sounds. |
+| Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
+| Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel, hit flash / death sprite, sounds. |
+| Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: nicer beam, sounds, tuning. |
+| Story screen | Yang | **Starter version works** (3 text pages). Left: story art, text effect. |
+| GameState | Kong | **Starter version works** (timer, win / lose, level flow). Left: the open decisions in its TODO. |
+| HUD | Kong | **Starter version works** (hearts, timer, laser status). Left: icons, timer warning, wave number. |
+| Level 1 and Level 2 | Mew | **Starter mazes only.** Real maze, paths and spots still to do. |
+
+The detailed TODO list for each piece is in the comment at the top of its `.gd` file.
+
+## Testing (all Ploy)
+
+CI runs both of these on every pull request. To run them yourself:
+
+```bash
+godot --headless --path . --import
+godot --headless --path . -s tools/check_load.gd
+godot --headless --path . -s tools/smoke_test.gd
+```
+
+- **Load check** (`tools/check_load.gd`, about 1 second): every script and scene loads.
+- **Smoke test** (`tools/smoke_test.gd`, about a minute): plays the whole game loop and prints PASS / FAIL for each step.
+
 ## Project layout and who owns each file
 
 ```
@@ -118,11 +154,12 @@ abducted-escape-the-mothership/
 ├── assets/                        # Fah
 │   ├── sprites/                   # Fah: 24 in-game 64x64 PNGs (player, monsters, egg, laser, hearts...)
 │   ├── home/                      # Fah: layered title screen art
-│   ├── audio/                     # Fah: music and sounds (empty for now)
-│   └── fonts/                     # Fah: pixel font (empty for now)
+│   ├── audio/                     # Fah: music/ (3 looping tracks) and sfx/
+│   └── fonts/                     # Fah: Minecraft.ttf (titles), VT323.ttf (body text)
 ├── art_source/                    # Fah: Illustrator and hi-res source, Godot ignores it
 │   └── techlab_pack/              # Mew: original tile pack (license + full tileset) that levels/tiles/ was cut from
 ├── tools/
+│   ├── check_load.gd              # Ploy: checks every script and scene loads (CI runs it)
 │   ├── convert_sprites.py         # Fah: turns big exports into 64x64 sprites
 │   └── smoke_test.gd              # Ploy: plays the whole game loop automatically
 ├── sandbox/                       # personal test scenes (name them yourname_*.tscn)
