@@ -36,8 +36,8 @@ TODO list in the comment at the top.
 | Person | Responsible for |
 |---|---|
 | **Yang** | Player (movement, shooting, HP, bullet) and the whole laser sequence: laser manager (kill charge + spawning, then the sweeping aim), laser pickup, aim mode. Also the story screen. |
-| **Ploy** | All monsters and waves, the monster origin (Egg + Commander), the end screen. **Also the integrator:** reviews and merges PRs, approves changes to `events.gd`, `project.godot` and `docs/`. **Also owns all testing** (see [Testing](#testing-all-ploy)). |
-| **Kong** | `GameState` (3 min timer, win/lose, level flow), `game.gd` (builds a level and wires everyone's pieces together) and the HUD logic. |
+| **Ploy** | All monsters and waves, the monster origin (Egg + Commander), the end screen, and `game.gd` (builds a level and wires everyone's pieces together). **Also the integrator:** reviews and merges PRs, approves changes to `events.gd`, `project.godot` and `docs/`. **Also owns all testing** (see [Testing](#testing-all-ploy)). |
+| **Kong** | `GameState` (3 min timer, win/lose, level flow) and the HUD logic. |
 | **Fah** | All art, animation, sound and fonts. The title screen. Also gives the others sprites, icons and sounds when they ask. |
 | **Mew** | Level 1 and Level 2: maze, walls, enemy paths, spawn points, laser spots. |
 
@@ -54,7 +54,7 @@ Go top to bottom. A file only needs things from **earlier rows**, so if you're o
 | | 5. `enemies/` + wave manager (monsters, waves) | Ploy | 1 paths, 2 sprites, 4 player to hurt |
 | | 6. `laser/origins/` (Egg, Commander) | Ploy | 1 `OriginSpot` / `OriginPath`, 2 sprite |
 | **3. Laser** | 7. `laser/` (laser manager, pickup, aim mode) | Yang | 1 laser spots, 5 kills, 6 origin to hit |
-| **4. Wire-up and screens** | 8. `game/game.gd` (builds the level, connects everyone) | Kong | 1, 4, 5, 6, 7 (loads them all) |
+| **4. Wire-up and screens** | 8. `game/game.gd` (builds the level, connects everyone) | Ploy | 1, 4, 5, 6, 7 (loads them all) |
 | | 9. `ui/hud.gd` (HP, laser, timer) | Kong | 3 timer, 4 HP signal, 7 laser signals, 2 hearts and font |
 | | 10. `ui/title_screen.tscn` | Fah | 3 `start_new_game()` |
 | | 11. `ui/story_screen.tscn` | Yang | 3 `story_id`, `goto()` |
@@ -76,8 +76,8 @@ abducted-escape-the-mothership/
 │   ├── events.gd                  # shared signals, ask Ploy before adding one
 │   └── game_state.gd              # Kong: timer, win/lose, level flow
 ├── game/
-│   ├── game.gd                    # Kong: builds a level and wires every system
-│   ├── game.tscn                  # Kong
+│   ├── game.gd                    # Ploy: builds a level and wires every system
+│   ├── game.tscn                  # Ploy
 │   └── GUIDE.md                   # Kong (old, see note below)
 ├── levels/
 │   ├── level.gd                   # Mew
