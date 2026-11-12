@@ -83,6 +83,118 @@ func _fire(aim: Node, direction: Vector2) -> void:
 	await process_frame
 
 
+## Runs an enemy's movement by hand, frame by frame, so the checks don't depend on real time
+func _step(enemy: Node, seconds: float) -> void:
+	for i in int(round(seconds * 60.0)):
+		enemy._process(1.0 / 60.0)
+
+
+## How far the enemy is from the path line (0 = exactly on it)
+func _off_path(enemy: Node2D, path: Path2D) -> float:
+	return enemy.position.distance_to(path.curve.get_closest_point(enemy.position))
+
+
+func _spawn_on_test_path(scene: String, path: Path2D) -> Node:
+	var enemy: Node = load(scene).instantiate()
+	path.add_child(enemy)
+	enemy.set_process(false)   # only _step() moves it
+	return enemy
+
+
+## The 3 monster types must move differently (no level, no player needed).
+## Test path is an L: 400 px right, then 400 px down. Corner at progress 400.
+func _enemy_type_checks() -> void:
+	var path := Path2D.new()
+	path.curve = Curve2D.new()
+	for p in [Vector2(0, 0), Vector2(400, 0), Vector2(400, 400)]:
+		path.curve.add_point(p)
+	root.add_child(path)
+
+	# Basic: walks the line at its speed, no wobble, no stops
+	var basic: Node2D = _spawn_on_test_path("res://enemies/enemy_basic.tscn", path)
+	var max_off := 0.0
+	for i in 60:
+		_step(basic, 1.0 / 6.0)   # 10 s total, passes the corner
+		max_off = maxf(max_off, _off_path(basic, path))
+	var lap_err := fposmod(basic.progress - basic.speed * 10.0, 800.0)   # loop wraps at 800
+	_check("basic monster walks at its speed", minf(lap_err, 800.0 - lap_err) < 2.0,
+			"progress %.0f, expected %.0f" % [basic.progress, basic.speed * 10.0])
+	_check("basic monster stays on the path", max_off < 1.0, "max %.1f px off" % max_off)
+
+	# Fast: zig-zags sideways on BOTH legs (a plain v_offset would only wobble on the flat leg)
+	var fast: Node2D = _spawn_on_test_path("res://enemies/enemy_fast.tscn", path)
+	var amp = fast.get("zigzag_amplitude")
+	if amp == null:
+		_check("fast monster has a zigzag_amplitude setting", false)
+	else:
+		var off_flat := 0.0
+		var off_down := 0.0
+		var off_max := 0.0
+		for i in 240:   # 4 s at 140 px/s = 560 px, so both legs
+			_step(fast, 1.0 / 60.0)
+			var off := _off_path(fast, path)
+			off_max = maxf(off_max, off)
+			if fast.progress < 380.0:
+				off_flat = maxf(off_flat, off)
+			elif fast.progress > 420.0:
+				off_down = maxf(off_down, off)
+		_check("fast monster zig-zags on the horizontal leg", off_flat > 5.0, "max %.1f px" % off_flat)
+		_check("fast monster zig-zags on the vertical leg", off_down > 5.0, "max %.1f px" % off_down)
+		_check("fast monster zig-zag stays inside its amplitude", off_max <= amp + 1.0,
+				"max %.1f px, amplitude %.1f" % [off_max, amp])
+		_check("fast monster still moves forward at its speed", absf(fast.progress - fast.speed * 4.0) < 2.0,
+				"progress %.0f" % fast.progress)
+
+	# Tank: stops at the corner for corner_pause seconds, then carries on
+	var tank: Node2D = _spawn_on_test_path("res://enemies/enemy_tank.tscn", path)
+	var pause_s = tank.get("corner_pause")
+	if pause_s == null:
+		_check("tank monster has a corner_pause setting", false)
+	else:
+		tank.progress = 380.0
+		_step(tank, 0.5)   # reaches the corner at 0.4 s; would be at 405 without a stop
+		var at_corner: float = tank.progress
+		_check("tank stops at the corner", absf(at_corner - 400.0) < 2.0, "progress %.1f" % at_corner)
+		_step(tank, pause_s * 0.5)
+		_check("tank waits at the corner", absf(tank.progress - at_corner) < 0.5, "progress %.1f" % tank.progress)
+		_step(tank, pause_s * 0.5 + 1.0)
+		_check("tank moves on after corner_pause", tank.progress > at_corner + 20.0, "progress %.1f" % tank.progress)
+		# Next lap: wrap past the end, then the same corner must stop it again
+		tank.progress = 795.0
+		_step(tank, 0.2)
+		tank.progress = 380.0
+		_step(tank, 0.5)
+		_check("tank stops at the corner again on the next lap", absf(tank.progress - 400.0) < 2.0, "progress %.1f" % tank.progress)
+
+		# A path that crosses itself: point 4 (100,0) also lies on the first leg.
+		# The tank must not stop on the first leg at progress 100, only at the real corner (500).
+		var loop_path := Path2D.new()
+		loop_path.curve = Curve2D.new()
+		for p in [Vector2(0, 0), Vector2(200, 0), Vector2(200, 100), Vector2(100, 100), Vector2(100, 0), Vector2(100, -100)]:
+			loop_path.curve.add_point(p)
+		root.add_child(loop_path)
+		var tank2: Node2D = _spawn_on_test_path("res://enemies/enemy_tank.tscn", loop_path)
+		tank2.progress = 80.0
+		_step(tank2, 0.5)
+		_check("tank does not stop where a later corner crosses an earlier leg", tank2.progress > 102.0, "progress %.1f" % tank2.progress)
+		tank2.progress = 480.0
+		_step(tank2, 0.5)
+		_check("tank stops at that later corner", absf(tank2.progress - 500.0) < 2.0, "progress %.1f" % tank2.progress)
+		loop_path.queue_free()
+
+	# Waves: every wave names a real monster type
+	var waves: Script = load("res://enemies/wave_manager.gd")
+	var bad := []
+	for level in waves.WAVES:
+		for w in waves.WAVES[level]:
+			if w["type"] != "mixed" and not waves.ENEMY_SCENES.has(w["type"]):
+				bad.append("L%d %s" % [level, w["type"]])
+	_check("every wave uses a real monster type", bad.is_empty(), bad)
+
+	path.queue_free()
+	await process_frame
+
+
 func _run() -> void:
 	_events = root.get_node("Events")
 	_state = root.get_node("GameState")
@@ -91,6 +203,8 @@ func _run() -> void:
 		print("FAIL  test did not finish within 90 s (a step crashed, see the errors above)")
 		quit(2))
 	await process_frame
+
+	await _enemy_type_checks()
 
 	# ---------- Level 1 ----------
 	var game: Node = await _load_game(1)

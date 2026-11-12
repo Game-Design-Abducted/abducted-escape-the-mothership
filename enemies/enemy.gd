@@ -21,8 +21,8 @@ extends PathFollow2D
 ##
 ## TODO Ploy:
 ##  - basic movement along a path (done, works)
-##  - make the 3 types feel different (speed, HP, movement pattern,
-##    e.g. the fast one zig-zags with v_offset, the tank stops at corners)
+##  - make the 3 types feel different (done: speed, HP, fast zig-zags,
+##    tank stops at corners)
 ##  - hit flash + death sprite (the textures are already exported below)
 ##  - level 2 difficulty (see WAVES[2] in wave_manager.gd)
 ##  - talk to the group about what happens at the END of a path.
@@ -32,6 +32,11 @@ extends PathFollow2D
 @export var speed := 80.0
 @export var max_hp := 1
 @export var contact_damage := 1
+## Fast monster: sideways wobble in px (0 = off) and wobble cycles per second
+@export var zigzag_amplitude := 0.0
+@export var zigzag_speed := 3.0
+## Tank: seconds to stop at each corner of the path (0 = never stops)
+@export var corner_pause := 0.0
 
 @export_group("Sprites")
 @export var normal_texture: Texture2D
@@ -43,6 +48,9 @@ const CONTACT_CHECK_INTERVAL := 0.2
 var hp: int
 var _dead := false
 var _contact_tick := CONTACT_CHECK_INTERVAL
+var _zigzag_time := 0.0
+var _pause_left := 0.0
+var _corners := PackedFloat32Array()   # filled on first use, see _corner_offsets()
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var hitbox: Area2D = $Hitbox
@@ -60,7 +68,13 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _dead:
 		return
-	progress += speed * delta
+	if _pause_left > 0.0:
+		_pause_left -= delta
+	else:
+		var before := progress
+		progress += speed * delta
+		_stop_at_corner(before)
+	_apply_zigzag(delta)
 	# body_entered only fires at the moment of first touch, so re-check a few
 	# times per second. Otherwise a player who stays on top of a monster (or
 	# touched it while invincible) would never be hurt again.
@@ -69,6 +83,52 @@ func _process(delta: float) -> void:
 		_contact_tick = CONTACT_CHECK_INTERVAL
 		for body in hitbox.get_overlapping_bodies():
 			_on_hitbox_body_entered(body)
+
+
+## If we just walked past a corner (interior curve point), snap to it and wait.
+## Handles the loop wrap: progress dropping means we passed the end and restarted.
+func _stop_at_corner(before: float) -> void:
+	if corner_pause <= 0.0:
+		return
+	if _corners.is_empty():
+		_corners = _corner_offsets((get_parent() as Path2D).curve)
+	var wrapped := progress < before
+	for c in _corners:
+		var crossed := (c > before or c <= progress) if wrapped else (before < c and c <= progress)
+		if crossed:
+			progress = c
+			_pause_left = corner_pause
+			return
+
+
+## Distance along the path to each interior point. Measured as the length of the
+## curve up to that point, so a path that crosses itself still gets the right spot.
+static func _corner_offsets(curve: Curve2D) -> PackedFloat32Array:
+	var result := PackedFloat32Array()
+	var part := Curve2D.new()
+	part.bake_interval = curve.bake_interval
+	for i in curve.point_count - 1:
+		part.add_point(curve.get_point_position(i), curve.get_point_in(i), curve.get_point_out(i))
+		if i >= 1:
+			result.append(part.get_baked_length())
+	return result
+
+
+## Wobble sideways (perpendicular to the path direction) on every leg.
+func _apply_zigzag(delta: float) -> void:
+	if zigzag_amplitude <= 0.0:
+		return
+	_zigzag_time += delta
+	var curve := (get_parent() as Path2D).curve
+	var a := curve.sample_baked(progress)
+	var b := curve.sample_baked(progress + 2.0)
+	if a.is_equal_approx(b):   # at the very end of the curve, look backwards
+		b = a
+		a = curve.sample_baked(progress - 2.0)
+	var dir := (b - a).normalized()
+	var side := Vector2(-dir.y, dir.x) * sin(_zigzag_time * TAU * zigzag_speed) * zigzag_amplitude
+	h_offset = side.x
+	v_offset = side.y
 
 
 func take_damage(amount: int) -> void:

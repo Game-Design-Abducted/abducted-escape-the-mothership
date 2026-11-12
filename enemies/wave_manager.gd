@@ -11,7 +11,7 @@ extends Node
 ##
 ## TODO Ploy:
 ##  - basic spawning (done, works)
-##  - design real waves for level 1 in WAVES[1]
+##  - design real waves for level 1 in WAVES[1] (done)
 ##  - maybe pick a path per enemy type (e.g. tanks only on Path_A)
 ##  - level 2 waves in WAVES[2] (harder, more fast monsters)
 ##  - optional: emit Events.wave_started so Kong's HUD can show "Wave 3"
@@ -26,10 +26,13 @@ const ENEMY_SCENES := {
 ## "pause" = seconds of quiet before the NEXT wave starts.
 const WAVES := {
 	1: [
-		{"type": "basic", "count": 5, "interval": 1.5, "pause": 3.0},
-		{"type": "fast", "count": 4, "interval": 1.2, "pause": 3.0},
-		{"type": "tank", "count": 2, "interval": 2.5, "pause": 4.0},
-		{"type": "mixed", "count": 10, "interval": 1.0, "pause": 4.0},
+		{"type": "basic", "count": 4, "interval": 2.0, "pause": 5.0},    # learn to shoot
+		{"type": "basic", "count": 6, "interval": 1.5, "pause": 5.0},
+		{"type": "fast", "count": 4, "interval": 1.6, "pause": 6.0},     # fast ones show up
+		{"type": "tank", "count": 2, "interval": 3.0, "pause": 7.0},     # first tanks
+		{"type": "mixed", "count": 10, "interval": 1.4, "pause": 6.0},
+		{"type": "fast", "count": 8, "interval": 1.0, "pause": 6.0},
+		{"type": "mixed", "count": 14, "interval": 1.0, "pause": 5.0},
 	],
 	2: [
 		{"type": "mixed", "count": 8, "interval": 1.0, "pause": 2.0},
