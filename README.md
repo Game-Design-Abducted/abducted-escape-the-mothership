@@ -78,7 +78,7 @@ abducted-escape-the-mothership/
 ├── game/
 │   ├── game.gd                    # Ploy: builds a level and wires every system
 │   ├── game.tscn                  # Ploy
-│   └── GUIDE.md                   # Kong (old, see note below)
+│   └── GUIDE.md                   # Ploy
 ├── levels/
 │   ├── level.gd                   # Mew
 │   ├── level_1.tscn               # Mew
@@ -135,7 +135,7 @@ Two kinds of small files are not listed one by one:
 - `*.import` files (Godot makes one next to every image) belong to the owner of the picture next to them.
 - `.gdignore` and `.gitkeep` files only tell Godot or git to skip or keep a folder, so they belong to that folder's owner.
 
-`GUIDE.md` files inside `levels/`, `player/`, `laser/`, `game/` and `ui/` are older and still describe the
+`GUIDE.md` files inside `levels/`, `player/`, `laser/` and `ui/` are older and still describe the
 first split of work. If one disagrees with this README, follow this README.
 
 ## How the pieces connect
