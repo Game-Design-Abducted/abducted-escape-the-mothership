@@ -9,6 +9,7 @@ extends SceneTree
 ## file that was moved or deleted. Exit code 0 = everything loads.
 
 const SKIP_DIRS := [".godot", ".git", ".claude", "art_source"]
+const MUSIC_DIR := "res://assets/audio/music"
 
 
 func _initialize() -> void:
@@ -18,6 +19,13 @@ func _initialize() -> void:
 		if not _loads(path):
 			failures += 1
 			print("FAIL  %s" % path)
+	# Background music must loop (set Loop in the Import dock, then Reimport).
+	for f in DirAccess.get_files_at(MUSIC_DIR):
+		if f.get_extension() == "ogg":
+			var music: AudioStream = load(MUSIC_DIR.path_join(f))
+			if not (music is AudioStreamOggVorbis and music.loop):
+				failures += 1
+				print("FAIL  %s does not loop" % MUSIC_DIR.path_join(f))
 	print("")
 	print("ALL %d FILES LOAD" % paths.size() if failures == 0 else "%d FILE(S) FAILED TO LOAD" % failures)
 	quit(1 if failures > 0 else 0)
