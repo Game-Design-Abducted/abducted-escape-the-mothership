@@ -19,6 +19,8 @@
 - Corridors at least **2 tiles wide (64 px)**. The player and monsters are ~44 px.
 - Enemy paths should run down the *middle* of corridors (tile center = multiple of 32 + 16).
 - Path point 1 = spawn point. Put it at `OriginSpot` so monsters come out of the egg.
+- Put the **last** point back on the first one. Monsters jump from the end of a path to its start, so an open path makes them teleport across the map.
+- Only add a point where the route turns, and snap it to the grid. Tanks stop at every point, so extra points on a straight line make them stop in the middle of a corridor.
 - Laser spots should be somewhat far from the origin, so grabbing the laser takes some risk.
 - Each Level should look a bit different: e.g. Level 1 mostly plain steel walls, Level 2 more consoles.
 
