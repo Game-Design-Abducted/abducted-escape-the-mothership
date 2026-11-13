@@ -72,18 +72,18 @@ The whole loop is playable from start to finish: title → intro story → Level
 |---|---|---|
 | Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). Waves designed for Level 1 and Level 2. Left: death sprite. |
 | Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Left: destroy animation, tuning. |
-| `game.gd` wire-up | Ploy | **Done.** |
+| `game.gd` wire-up | Ploy | **Done.** Builds the level, connects everyone's pieces, and plays the level music and every in-level sound. Left: tune the three volume settings by ear. |
 | End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Left: animation, if Fah wants to add any. |
 | Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR (see [Testing](#testing-all-ploy)). |
 | Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
 | Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). The title screen, end screen, level music and every in-level sound are hooked up (laser, shooting, monsters, player hurt / death, last-10-seconds tick; all played from `game.gd`). Not used yet: `typewriter` (story screen has no text effect) and `immune_tink` (bullets pass through the origin). |
 | Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
-| Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel, hit flash / death sprite, sounds. |
-| Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: nicer beam, sounds, tuning. |
-| Story screen | Yang | **Starter version works** (3 text pages). Left: story art, text effect. |
-| GameState | Kong | **Starter version works** (timer, win / lose, level flow). Left: the open decisions in its TODO. |
-| HUD | Kong | **Starter version works** (hearts, timer, laser status). Left: icons, timer warning, wave number. |
-| Level 1 and Level 2 | Mew | **Both mazes are in** (walls, 2 monster routes per level that loop back to the start, laser spots, the Commander route in Level 2). Left: play-test tuning. |
+| Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel (free or Pac-Man grid), attack tuning, hit flash / death sprite. |
+| Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: tune kill counts and sweep speed (the first laser shows up after about 20 s, so the 3 minute timer never matters), nicer beam, decide if walls block the laser. **Bug:** a red "flushing queries" error prints each time the laser spawns; the pickup spawn in `laser_manager.gd` probably needs to be deferred. |
+| Story screen | Yang | **Starter version works** (3 text pages). Left: story art, typewriter text effect (the `typewriter` sound is waiting for it). |
+| GameState | Kong | **Starter version works** (timer, win / lose, level flow). Left: a short "YOU WIN / TIME UP" moment before the scene changes, and two decisions: does the timer pause while aiming, does retry restart the same level or Level 1. |
+| HUD | Kong | **Starter version works** (hearts, timer, laser status). Left: pixel font, timer turns red under 30 s, heart-lost animation, laser icon, wave number and level title. In Level 2 monsters on the top row walk under the hearts. |
+| Level 1 and Level 2 | Mew | **Both mazes are in** (walls, 2 monster routes per level that loop back to the start, laser spots, the Commander route in Level 2). Left: play-test tuning. A scripted play-through found Level 1 can be won by standing at the egg, and Level 2 is dangerous in its first seconds because the player starts close to the monster spawn. |
 
 The detailed TODO list for each piece is in the comment at the top of its `.gd` file.
 
