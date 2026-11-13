@@ -83,7 +83,7 @@ The whole loop is playable from start to finish: title → intro story → Level
 | Story screen | Yang | **Starter version works** (3 text pages). Left: story art, text effect. |
 | GameState | Kong | **Starter version works** (timer, win / lose, level flow). Left: the open decisions in its TODO. |
 | HUD | Kong | **Starter version works** (hearts, timer, laser status). Left: icons, timer warning, wave number. |
-| Level 1 and Level 2 | Mew | **Level 1 maze is in** (walls, 2 monster routes that loop back to the egg, laser spots). Level 2 is still the starter maze. Left: Level 2, play-test tuning. |
+| Level 1 and Level 2 | Mew | **Both mazes are in** (walls, 2 monster routes per level that loop back to the start, laser spots, the Commander route in Level 2). Left: play-test tuning. |
 
 The detailed TODO list for each piece is in the comment at the top of its `.gd` file.
 
