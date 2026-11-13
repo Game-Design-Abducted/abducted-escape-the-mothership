@@ -83,6 +83,25 @@ func _fire(aim: Node, direction: Vector2) -> void:
 	await process_frame
 
 
+## Which way to shoot at `target` from `distance` px away without a maze wall in
+## between. Where the monster is by now depends on timing, so a fixed side can put
+## the shooter behind a wall. Falls back to RIGHT if all four sides are blocked.
+func _clear_shot_direction(target: Node2D, distance: float) -> Vector2:
+	var space := target.get_world_2d().direct_space_state
+	for dir: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP]:
+		var side := Vector2(-dir.y, dir.x) * 8.0   # a bullet is 10 px wide
+		var blocked := false
+		for offset: Vector2 in [Vector2.ZERO, side, -side]:
+			var from := target.global_position - dir * (distance + 16.0) + offset
+			var query := PhysicsRayQueryParameters2D.create(from, target.global_position + offset, 1)   # layer 1 = walls
+			query.hit_from_inside = true
+			if not space.intersect_ray(query).is_empty():
+				blocked = true
+		if not blocked:
+			return dir
+	return Vector2.RIGHT
+
+
 ## Runs an enemy's movement by hand, frame by frame, so the checks don't depend on real time
 func _step(enemy: Node, seconds: float) -> void:
 	for i in int(round(seconds * 60.0)):
@@ -414,8 +433,9 @@ func _run() -> void:
 	var target: Node2D = get_nodes_in_group("enemies")[-1]
 	var kills_before: int = lm._kills
 	target.speed = 0.0
-	player.global_position = target.global_position - Vector2(70, 0)
-	player.facing = Vector2.RIGHT
+	var shot_dir := _clear_shot_direction(target, 70.0)
+	player.global_position = target.global_position - shot_dir * 70.0
+	player.facing = shot_dir
 	player.shoot()
 	await create_timer(0.3).timeout
 	_check("bullet kills a monster", not is_instance_valid(target) or target._dead)
