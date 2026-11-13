@@ -14,7 +14,8 @@ extends Node
 ##  - design real waves for level 1 in WAVES[1] (done)
 ##  - maybe pick a path per enemy type (e.g. tanks only on Path_A)
 ##  - level 2 waves in WAVES[2] (done: denser, more fast monsters)
-##  - optional: emit Events.wave_started so Kong's HUD can show "Wave 3"
+##  - Events.wave_started(n) is emitted for every wave, so Kong's HUD can show "Wave 3" (done)
+##  - quiet start (`start_delay`) and a cap on monsters alive (`max_alive`) (done)
 
 const ENEMY_SCENES := {
 	"basic": preload("res://enemies/enemy_basic.tscn"),
@@ -50,6 +51,11 @@ const WAVES := {
 @export var loop_speedup := 0.85
 ## ...but never below this, or the last minute floods the map with monsters
 @export var min_speed_factor := 0.4
+## Seconds of quiet at the start of a level, so the player can look around first
+@export var start_delay := 2.0
+## Never more than this many monsters alive at once. Spawning waits while the map
+## is full, so a player who stops shooting gets a crowd, not hundreds of monsters.
+@export var max_alive := 40
 
 var _paths: Array[Path2D] = []
 var _waves: Array = []
@@ -72,6 +78,12 @@ func setup(paths: Array[Path2D], level_number: int) -> void:
 	_start_next_wave()
 
 
+## No more monsters. game.gd calls this when the level is won or lost.
+func stop() -> void:
+	if _timer:
+		_timer.stop()
+
+
 func _start_next_wave() -> void:
 	_wave_index += 1
 	if _wave_index >= _waves.size():
@@ -79,13 +91,16 @@ func _start_next_wave() -> void:
 		_speed_factor = maxf(_speed_factor * loop_speedup, min_speed_factor)
 	_left_in_wave = _waves[_wave_index]["count"]
 	Events.wave_started.emit(_wave_index + 1)
-	_timer.start(0.5)
+	_timer.start(maxf(start_delay, 0.05) if _wave_index == 0 and _speed_factor == 1.0 else 0.5)
 
 
 func _on_timer() -> void:
 	var wave: Dictionary = _waves[_wave_index]
 	if _left_in_wave <= 0:
 		_start_next_wave()
+		return
+	if get_tree().get_nodes_in_group("enemies").size() >= max_alive:
+		_timer.start(0.5)   # map is full: try again soon, the wave is not used up
 		return
 	spawn_enemy(wave["type"])
 	_left_in_wave -= 1
@@ -101,4 +116,5 @@ func spawn_enemy(type: String) -> Node:
 	var enemy: Node = ENEMY_SCENES[type].instantiate()
 	var path: Path2D = _paths.pick_random()
 	path.add_child(enemy)   # enemy is a PathFollow2D, so it must live under a Path2D
+	Events.enemy_spawned.emit(enemy)
 	return enemy

@@ -164,6 +164,27 @@ func _enemy_type_checks() -> void:
 		_check("fast monster still moves forward at its speed", absf(fast.progress - fast.speed * 4.0) < 2.0,
 				"progress %.0f" % fast.progress)
 
+	# Hatching: a monster that just came out can't be hurt and can't hurt yet
+	var hatchling: Node = _spawn_on_test_path("res://enemies/enemy_basic.tscn", path)
+	var protection = hatchling.get("spawn_protection")
+	if protection == null or protection <= 0.0:
+		_check("monsters have a spawn_protection setting", false)
+	else:
+		var blocked := [0]
+		var count_blocked := func(_enemy): blocked[0] += 1
+		_events.enemy_blocked.connect(count_blocked)
+		hatchling.take_damage(1)
+		_check("a hatching monster cannot be hurt", not hatchling._dead and hatchling.hp == hatchling.max_hp and blocked[0] == 1,
+				"hp %d, blocked signals %d" % [hatchling.hp, blocked[0]])
+		_check("a hatching monster starts small", hatchling.get_node("Sprite2D").scale.x < 0.6,
+				"scale %.2f" % hatchling.get_node("Sprite2D").scale.x)
+		_step(hatchling, protection + 0.1)
+		_check("it is full size once it has hatched", absf(hatchling.get_node("Sprite2D").scale.x - 1.0) < 0.1,
+				"scale %.2f" % hatchling.get_node("Sprite2D").scale.x)
+		hatchling.take_damage(1)
+		_check("once hatched, one bullet kills a basic monster", hatchling._dead)
+		_events.enemy_blocked.disconnect(count_blocked)
+
 	# Tank: stops at the corner for corner_pause seconds, then carries on
 	var tank: Node2D = _spawn_on_test_path("res://enemies/enemy_tank.tscn", path)
 	var pause_s = tank.get("corner_pause")
@@ -300,6 +321,12 @@ func _level_2_checks() -> void:
 	_check("repeating waves stop getting faster at min_speed_factor",
 			floor_factor != null and floor_factor >= 0.3 and manager._speed_factor >= floor_factor - 0.001,
 			"factor %.3f, floor %s" % [manager._speed_factor, str(floor_factor)])
+	# ...and the map has a cap, so a player who stops shooting does not get hundreds of monsters
+	manager.max_alive = 5
+	for i in 30:
+		manager._on_timer()
+	var alive := get_nodes_in_group("enemies").size()
+	_check("spawning waits while max_alive monsters are on the map", alive == 5, "%d alive, cap 5" % alive)
 	manager.queue_free()
 	flood_path.queue_free()
 
@@ -451,6 +478,7 @@ func _run() -> void:
 	var target: Node2D = get_nodes_in_group("enemies")[-1]
 	var kills_before: int = lm._kills
 	target.speed = 0.0
+	target._protected_for = 0.0   # it may have only just hatched; hatching monsters can't be hurt
 	var shot_dir := _clear_shot_direction(target, 70.0)
 	player.global_position = target.global_position - shot_dir * 70.0
 	player.facing = shot_dir
