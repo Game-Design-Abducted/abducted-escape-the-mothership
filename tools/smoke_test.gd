@@ -368,6 +368,10 @@ func _level_problems(scene_path: String, needs_origin_path: bool) -> Array:
 		for path in level.get_node("Paths").get_children():
 			if path is Path2D and path.curve != null and path.curve.point_count >= 2:
 				routes += 1
+				# Monsters are children of the path, so a path hidden in the editor
+				# (eye icon) makes its monsters invisible while they still hurt.
+				if not path.visible:
+					problems.append("Paths/%s is hidden, so its monsters are invisible" % path.name)
 			else:
 				problems.append("Paths/%s has no route drawn" % path.name)
 		if routes == 0:
