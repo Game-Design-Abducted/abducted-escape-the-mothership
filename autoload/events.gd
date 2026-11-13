@@ -16,6 +16,7 @@ signal player_died
 
 # ---- Enemies (emitted by Ploy's enemy.gd / wave_manager.gd) ----
 signal enemy_killed(enemy: Node)                 ## LaserManager counts these to charge the laser
+signal enemy_hit(enemy: Node)                    ## took damage but is still alive (tanks)
 signal wave_started(wave_number: int)
 
 # ---- Laser (emitted by Yang's laser_manager.gd) ----

@@ -17,7 +17,8 @@ extends PathFollow2D
 ##  - child `Hitbox` (Area2D) on layer 3 (enemies), mask 2 (player)
 ##      Yang's bullets find it and call take_damage() on this root
 ##      touching the player calls player.take_damage(contact_damage)
-##  - emits Events.enemy_killed(self) when it dies
+##  - emits Events.enemy_killed(self) when it dies, Events.enemy_hit(self)
+##    when it is hurt but survives (game.gd plays the sounds)
 ##
 ## TODO Ploy:
 ##  - basic movement along a path (done, works)
@@ -138,6 +139,7 @@ func take_damage(amount: int) -> void:
 	if hp <= 0:
 		die()
 		return
+	Events.enemy_hit.emit(self)
 	_flash_hit()
 
 
