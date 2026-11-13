@@ -76,7 +76,7 @@ The whole loop is playable from start to finish: title → intro story → Level
 | End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Left: animation, if Fah wants to add any. |
 | Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR (see [Testing](#testing-all-ploy)). |
 | Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
-| Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). Only the title screen and end screen play sound so far; the other owners still need to hook up their sounds. |
+| Audio and fonts | Fah | **Files are in** (3 music tracks, the sound effects, Minecraft + VT323 fonts). The title screen, end screen, level music and laser sounds are hooked up (the last two in `game.gd`). Still silent: shooting, monsters, player hurt / death, timer tick, story text; their owners need to hook those up. |
 | Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
 | Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel, hit flash / death sprite, sounds. |
 | Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: nicer beam, sounds, tuning. |
