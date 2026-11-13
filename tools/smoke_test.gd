@@ -342,6 +342,14 @@ func _end_sound() -> String:
 	return "%s %s" % [jingle.stream.resource_path.get_file(), "playing" if jingle.playing else "silent"]
 
 
+## Which track game.gd is playing, e.g. "bgm_level.ogg playing"
+func _music_of(game: Node) -> String:
+	var music := game.get_node_or_null("Music") as AudioStreamPlayer
+	if music == null or music.stream == null:
+		return "no Music node"
+	return "%s %s" % [music.stream.resource_path.get_file(), "playing" if music.playing else "silent"]
+
+
 func _press_any_key() -> void:
 	for pressed in [true, false]:
 		var ev := InputEventKey.new()
@@ -415,6 +423,12 @@ func _run() -> void:
 	# ---------- Level 1 ----------
 	var game: Node = await _load_game(1)
 	_check("level 1 loads and the clock starts", game.name == "Game" and _state.running)
+	_check("level 1 plays the level music", _music_of(game) == "bgm_level.ogg playing", _music_of(game))
+	# game.gd adds one AudioStreamPlayer per sound effect, so listen for those
+	var heard := {}
+	game.child_entered_tree.connect(func(node: Node):
+		if node is AudioStreamPlayer and node.stream != null:
+			heard[node.stream.resource_path.get_file().get_basename()] = true)
 	var player: Node2D = get_first_node_in_group("player")
 	player.global_position = Vector2(300, 300)   # off every monster path while we wait
 	await create_timer(3.0).timeout
@@ -464,6 +478,12 @@ func _run() -> void:
 	to_origin = (origin.global_position - player.global_position).normalized()
 	await _fire(aim, to_origin)
 	_check("hit: origin destroyed and level won", origin.destroyed and _state.last_result_won and not _state.running)
+	var silent := []
+	for sound in ["player_hurt", "shoot", "enemy_die", "laser_spawn", "pickup", "laser_charge",
+			"laser_fire", "laser_miss", "origin_destroyed"]:
+		if not heard.has(sound):
+			silent.append(sound)
+	_check("level 1 played every sound it should have", silent.is_empty(), "missing: %s" % [silent])
 	await create_timer(2.0).timeout
 	_check("win leads to the Level 2 story page", current_scene.name == "StoryScreen" and _state.current_level == 2,
 			"%s, level %d" % [current_scene.name, _state.current_level])
@@ -478,6 +498,7 @@ func _run() -> void:
 	before = origin.global_position
 	await create_timer(0.5).timeout
 	_check("Commander keeps moving while the game is paused (aiming)", before.distance_to(origin.global_position) > 10.0)
+	_check("level 2 plays the boss music, also while paused", _music_of(game) == "bgm_boss.ogg playing", _music_of(game))
 	paused = false
 
 	# Timeout loses

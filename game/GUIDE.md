@@ -12,6 +12,7 @@ In order (the list at the top of `game.gd` is the source of truth):
 5. starts Yang's laser manager
 6. Kong's HUD is already inside `game.tscn` and just listens to `Events`
 7. tells `GameState` (Kong) to start the 3 minute timer
+8. plays the level music (Level 1 `bgm_level`, Level 2 `bgm_boss`) and every in-level sound (laser, shooting, monsters, player hurt / death, timer tick), by listening to `Events`
 
 When two systems need to talk, wire them up here or with a signal in `autoload/events.gd`. Don't let them reach into each other's code.
 
