@@ -6,7 +6,9 @@
 
 ## Already working (starter code)
 - Monsters walk Mew's paths, take damage from bullets, hurt the player on contact, and play their hit/dead sprites.
-- Wave manager spawns waves from the `WAVES` table and loops the last wave, faster each time.
+- They **hatch**: for `spawn_protection` seconds (0.7) a new monster is small and see-through, can't be hurt and can't hurt. This stops kill-farming on top of the egg and unfair hits from a monster that just appeared.
+- They bob as they walk, pop when hit, and float up and fade when killed. When the origin is destroyed they all dissolve (`vanish()`).
+- Wave manager spawns waves from the `WAVES` table and loops the last wave, faster each time. It waits `start_delay` (2 s) before the first monster and never has more than `max_alive` (40) on the map.
 
 ## Enemy tasks
 | Deadline | Task |
@@ -42,4 +44,5 @@ You own **all the testing** for the team. The others only build their part and o
 5. Merge. If two people changed the same `.tscn`, don't hand-merge it. Keep one version and ask the other person to redo their change.
 
 ## Test
+- `tools/playtest_bot.gd`: a scripted player plays a whole level a few times, to check balance after you change waves or monsters (see the README, Testing).
 - `sandbox/ploy_test.tscn` → **F6**: Level 1 paths + waves, no player.

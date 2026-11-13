@@ -20,11 +20,18 @@ extends PathFollow2D
 ##  - emits Events.enemy_killed(self) when it dies, Events.enemy_hit(self)
 ##    when it is hurt but survives (game.gd plays the sounds)
 ##
+## How a monster looks alive (all done in code, on the one sprite Fah drew):
+##  - HATCH: it grows out of the origin for `spawn_protection` seconds. While
+##    hatching it can't be hurt and can't hurt, so nobody can farm kills by
+##    standing on the egg, and nobody gets hit by a monster they couldn't see.
+##  - WALK: it bobs as it walks (the art faces the camera, so it never flips).
+##  - HIT: Hit sprite + a quick pop.   DEATH: Dead sprite, floats up and fades.
+##
 ## TODO Ploy:
 ##  - basic movement along a path (done, works)
 ##  - make the 3 types feel different (done: speed, HP, fast zig-zags,
 ##    tank stops at corners)
-##  - hit flash + death sprite (the textures are already exported below)
+##  - hit flash + death sprite (done, see above)
 ##  - level 2 difficulty (see WAVES[2] in wave_manager.gd)
 ##  - talk to the group about what happens at the END of a path.
 ##    Right now it loops forever. Could damage the ship instead (tower defense
@@ -38,6 +45,8 @@ extends PathFollow2D
 @export var zigzag_speed := 3.0
 ## Tank: seconds to stop at each corner of the path (0 = never stops)
 @export var corner_pause := 0.0
+## Seconds after spawning while it hatches: can't be hurt, can't hurt (0 = off)
+@export var spawn_protection := 0.7
 
 @export_group("Sprites")
 @export var normal_texture: Texture2D
@@ -45,12 +54,20 @@ extends PathFollow2D
 @export var dead_texture: Texture2D
 
 const CONTACT_CHECK_INTERVAL := 0.2
+const DEATH_TIME := 0.4
+const HATCH_START_SCALE := 0.35
+const HATCH_TINT := Color(0.7, 1.0, 0.75, 0.7)   # pale green and see-through while hatching
+const BOB_AMOUNT := 0.06       # how much the walk squashes the sprite (0.06 = 6 %)
+const BOB_PER_PIXEL := 0.2     # bob speed follows walking speed, so tanks plod and fast ones scurry
 
 var hp: int
 var _dead := false
 var _contact_tick := CONTACT_CHECK_INTERVAL
 var _zigzag_time := 0.0
 var _pause_left := 0.0
+var _protected_for := 0.0     # seconds of hatching left
+var _bob := 0.0
+var _pop := 1.0               # extra sprite scale, tweened by the hit pop
 var _corners := PackedFloat32Array()   # filled on first use, see _corner_offsets()
 
 @onready var sprite: Sprite2D = $Sprite2D
@@ -64,18 +81,23 @@ func _ready() -> void:
 	if normal_texture:
 		sprite.texture = normal_texture
 	hitbox.body_entered.connect(_on_hitbox_body_entered)
+	_protected_for = spawn_protection
+	_update_look()
 
 
 func _process(delta: float) -> void:
 	if _dead:
 		return
+	_protected_for = maxf(_protected_for - delta, 0.0)
 	if _pause_left > 0.0:
 		_pause_left -= delta
 	else:
 		var before := progress
 		progress += speed * delta
 		_stop_at_corner(before)
+		_bob += speed * delta * BOB_PER_PIXEL
 	_apply_zigzag(delta)
+	_update_look()
 	# body_entered only fires at the moment of first touch, so re-check a few
 	# times per second. Otherwise a player who stays on top of a monster (or
 	# touched it while invincible) would never be hurt again.
@@ -132,8 +154,30 @@ func _apply_zigzag(delta: float) -> void:
 	v_offset = side.y
 
 
+## True while it is still hatching out of the origin
+func is_hatching() -> bool:
+	return _protected_for > 0.0
+
+
+## Sprite size and tint for this frame: hatch grow-in, walk bob, hit pop
+func _update_look() -> void:
+	var grow := 1.0
+	if spawn_protection > 0.0 and _protected_for > 0.0:
+		var t := 1.0 - _protected_for / spawn_protection
+		grow = lerpf(HATCH_START_SCALE, 1.0, ease(t, 0.4))
+		sprite.modulate = HATCH_TINT.lerp(Color.WHITE, t * t)
+	elif sprite.modulate != Color.WHITE:
+		sprite.modulate = Color.WHITE
+	var squash := sin(_bob) * BOB_AMOUNT
+	sprite.scale = Vector2(1.0 + squash, 1.0 - squash) * grow * _pop
+	sprite.position.y = -absf(sin(_bob * 0.5)) * 2.0   # tiny hop
+
+
 func take_damage(amount: int) -> void:
 	if _dead:
+		return
+	if is_hatching():
+		Events.enemy_blocked.emit(self)   # the bullet bounces off (tink)
 		return
 	hp -= amount
 	if hp <= 0:
@@ -149,12 +193,37 @@ func die() -> void:
 	hitbox.set_deferred("monitorable", false)
 	if dead_texture:
 		sprite.texture = dead_texture
-	Events.enemy_killed.emit(self)
-	await get_tree().create_timer(0.4, false).timeout
-	queue_free()
+	# Deferred: a kill usually happens inside a bullet's physics callback, and
+	# listeners (the laser manager spawns a pickup) must not add physics bodies there.
+	Events.enemy_killed.emit.call_deferred(self)
+	# Float up and fade out
+	sprite.modulate = Color.WHITE
+	var tween := create_tween().set_parallel()
+	tween.tween_property(sprite, "position:y", sprite.position.y - 14.0, DEATH_TIME).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "modulate:a", 0.0, DEATH_TIME).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(queue_free)
+
+
+## Dissolve without counting as a kill. game.gd calls this on every monster
+## when the origin is destroyed.
+func vanish() -> void:
+	if _dead:
+		return
+	_dead = true
+	hitbox.set_deferred("monitoring", false)
+	hitbox.set_deferred("monitorable", false)
+	if dead_texture:
+		sprite.texture = dead_texture
+	sprite.modulate = Color.WHITE
+	var tween := create_tween().set_parallel()
+	tween.tween_property(sprite, "scale", Vector2.ZERO, DEATH_TIME).set_ease(Tween.EASE_IN)
+	tween.tween_property(sprite, "modulate:a", 0.0, DEATH_TIME)
+	tween.chain().tween_callback(queue_free)
 
 
 func _flash_hit() -> void:
+	_pop = 1.3
+	create_tween().tween_property(self, "_pop", 1.0, 0.18).set_ease(Tween.EASE_OUT)
 	if hit_texture == null:
 		return
 	sprite.texture = hit_texture
@@ -164,5 +233,5 @@ func _flash_hit() -> void:
 
 
 func _on_hitbox_body_entered(body: Node) -> void:
-	if not _dead and body.is_in_group("player"):
+	if not _dead and not is_hatching() and body.is_in_group("player"):
 		body.take_damage(contact_damage)

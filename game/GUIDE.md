@@ -13,6 +13,7 @@ In order (the list at the top of `game.gd` is the source of truth):
 6. Kong's HUD is already inside `game.tscn` and just listens to `Events`
 7. tells `GameState` (Kong) to start the 3 minute timer
 8. plays the level music (Level 1 `bgm_level`, Level 2 `bgm_boss`) and every in-level sound (laser, shooting, monsters, player hurt / death, timer tick), by listening to `Events`
+9. adds the screen feel: fade in, screen shake (a camera, so nothing in the level moves), hit and laser flashes, music that dips while aiming, the glowing spawn mark in Level 2 (`spawn_marker.gd`), and monsters that dissolve when the level is won
 
 When two systems need to talk, wire them up here or with a signal in `autoload/events.gd`. Don't let them reach into each other's code.
 

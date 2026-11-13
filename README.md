@@ -70,11 +70,11 @@ The whole loop is playable from start to finish: title → intro story → Level
 
 | Piece | Owner | Status |
 |---|---|---|
-| Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). Waves designed for Level 1 and Level 2. Left: death sprite. |
-| Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Left: destroy animation, tuning. |
-| `game.gd` wire-up | Ploy | **Done.** Builds the level, connects everyone's pieces, and plays the level music and every in-level sound. Left: tune the three volume settings by ear. |
-| End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Left: animation, if Fah wants to add any. |
-| Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR (see [Testing](#testing-all-ploy)). |
+| Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). They hatch out of the origin (small, see-through, can't be hurt and can't hurt for 0.7 s), bob as they walk, pop when hit, and float up and fade when killed. Waves designed for Level 1 and Level 2, with a 2 s quiet start and never more than 40 monsters alive. |
+| Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Both breathe, bulge when a monster comes out, and flash, shake and sink away when the laser destroys them. In Level 2 a glowing floor mark shows where monsters come out. Left: tuning. |
+| `game.gd` wire-up | Ploy | **Done.** Builds the level, connects everyone's pieces, plays the level music and every in-level sound, and adds the screen feel (fade in, screen shake, hit and laser flashes, music dips while aiming, monsters dissolve when you win). Left: tune the volume and shake settings by eye and ear. |
+| End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Fades in, the title pops, the picture sways, buttons grow and play the hover / click sounds, fades out. |
+| Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR, and a play-test bot plays whole levels to check balance (see [Testing](#testing-all-ploy)). |
 | Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
 | Audio and fonts | Fah | **Done.** 3 music tracks, the sound effects and the Minecraft + VT323 fonts are in. The title screen, end screen, level music and every in-level sound are hooked up (laser, shooting, monsters, player hurt / death, last-10-seconds tick; all played from `game.gd`). Not used yet: `typewriter` (story screen has no text effect) and `immune_tink` (bullets pass through the origin). |
 | Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
@@ -100,6 +100,14 @@ godot --headless --path . -s tools/smoke_test.gd
 - **Load check** (`tools/check_load.gd`, about 1 second): every script and scene loads.
 - **Smoke test** (`tools/smoke_test.gd`, about a minute): plays the whole game loop and prints PASS / FAIL for each step.
 
+Not in CI, run it by hand after changing waves, monsters or a level:
+
+```bash
+godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4
+```
+
+- **Play-test bot** (`tools/playtest_bot.gd`, a few minutes): a simple scripted player plays the level `--runs` times at 3x speed and prints, for each run, win / died / time up, how long it took, kills, hits taken and every laser shot. It is a mediocre player on purpose: if it wins every run in 20 seconds the level is too easy, if it never wins it is probably too hard. It can't judge how the game feels. The options are at the top of the file.
+
 ## Project layout and who owns each file
 
 ```
@@ -114,6 +122,7 @@ abducted-escape-the-mothership/
 ├── game/
 │   ├── game.gd                    # Ploy: builds a level and wires every system
 │   ├── game.tscn                  # Ploy
+│   ├── spawn_marker.gd            # Ploy: glowing floor mark where monsters come out (Level 2)
 │   └── GUIDE.md                   # Ploy
 ├── levels/
 │   ├── level.gd                   # Mew
@@ -160,6 +169,7 @@ abducted-escape-the-mothership/
 │   └── techlab_pack/              # Mew: original tile pack (license + full tileset) that levels/tiles/ was cut from
 ├── tools/
 │   ├── check_load.gd              # Ploy: checks every script and scene loads (CI runs it)
+│   ├── playtest_bot.gd            # Ploy: a scripted player plays whole levels, to check balance
 │   ├── convert_sprites.py         # Fah: turns big exports into 64x64 sprites
 │   └── smoke_test.gd              # Ploy: plays the whole game loop automatically
 ├── sandbox/                       # personal test scenes (name them yourname_*.tscn)
