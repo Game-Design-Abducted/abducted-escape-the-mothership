@@ -69,6 +69,12 @@ func _spawn_pickup() -> void:
 	var pickup = PICKUP_SCENE.instantiate()
 	pickup.position = spots.pick_random()
 	pickup.picked_up.connect(_on_picked_up)
+	# Deferred: the last kill comes from a bullet collision, and adding an
+	# Area2D inside a physics callback prints "flushing queries"
+	_add_pickup.call_deferred(pickup)
+
+
+func _add_pickup(pickup: Node2D) -> void:
 	_level.get_entities().add_child(pickup)
 	Events.laser_spawned.emit(pickup.global_position)
 
