@@ -10,8 +10,8 @@ extends Node
 ##   3. player touches it -> PAUSE the game, start aim mode -> Events.laser_picked_up
 ##   4. the aim line sweeps, player presses fire -> UNPAUSE -> Events.laser_fired(hit)
 ##        hit  -> origin.take_laser_hit(); after HITS_NEEDED hits -> Events.origin_destroyed
-##                -> GameState: win. Before that, charge again (RETRY_QUOTA) -> back to step 2
-##        miss -> charge again (RETRY_QUOTA) -> back to step 2
+##                -> GameState: win. Before that, charge again (RETRY_QUOTAS) -> back to step 2
+##        miss -> charge again (RETRY_QUOTAS) -> back to step 2
 ##
 ## game.gd calls setup(level, player, origin).
 ##
@@ -26,12 +26,19 @@ extends Node
 @export var sweep_speed_level_2 := 130.0
 
 ## Kills of each monster type needed before the first laser appears, per level
+## Keep each number below what the level's early waves actually spawn: kills
+## over a type's quota don't count, so a type that rarely shows up stalls the
+## whole charge. Level 2 only sends basics inside "mixed" waves (a random
+## pick of the 3 types), about 1 in 6 of its monsters.
 const FIRST_QUOTAS := {
 	1: {"basic": 10, "fast": 6, "tank": 3},
-	2: {"basic": 12, "fast": 8, "tank": 4},
+	2: {"basic": 2, "fast": 6, "tank": 2},
 }
-## Kills needed after a hit that didn't finish the origin, or after a miss
-const RETRY_QUOTA := {"basic": 4, "fast": 3, "tank": 1}
+## Kills needed after a hit that didn't finish the origin, or after a miss, per level
+const RETRY_QUOTAS := {
+	1: {"basic": 4, "fast": 3, "tank": 1},
+	2: {"basic": 2, "fast": 3, "tank": 1},
+}
 ## Laser hits the origin takes before it is destroyed, per level (overrides
 ## laser_hits_needed in Ploy's origin.gd)
 const HITS_NEEDED := {1: 2, 2: 3}
@@ -57,6 +64,10 @@ func setup(level: Level, player: Node2D, origin: Origin) -> void:
 		_origin.laser_hits_needed = HITS_NEEDED.get(GameState.current_level, 1)
 	Events.enemy_killed.connect(_on_enemy_killed)
 	_start_charging(FIRST_QUOTAS.get(GameState.current_level, FIRST_QUOTAS[1]))
+
+
+func _retry_quota() -> Dictionary:
+	return RETRY_QUOTAS.get(GameState.current_level, RETRY_QUOTAS[1])
 
 
 func _start_charging(quota: Dictionary) -> void:
@@ -152,6 +163,6 @@ func _on_fired(direction: Vector2) -> void:
 	if hit:
 		_origin.take_laser_hit()
 		if not _origin.destroyed:   # needs more hits
-			_start_charging(RETRY_QUOTA)
+			_start_charging(_retry_quota())
 	else:
-		_start_charging(RETRY_QUOTA)
+		_start_charging(_retry_quota())
