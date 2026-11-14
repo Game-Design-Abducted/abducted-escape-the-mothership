@@ -86,6 +86,7 @@ func _run() -> void:
 	ev.laser_spawned.connect(_on_laser_spawned)
 	ev.laser_picked_up.connect(_on_laser_picked)
 	ev.laser_fired.connect(_on_laser_fired)
+	ev.laser_mode_started.connect(func(mode_name, _how): if active and not run.laser.is_empty(): run.laser[-1]["mode"] = mode_name)
 	ev.level_finished.connect(_on_finished)
 	ev.item_used.connect(func(kind, _at): if active: run.items.append(kind))
 	physics_frame.connect(_tick)
@@ -277,15 +278,33 @@ func _aim_tick() -> void:
 		aim_err = randfn(0.0, 0.07)   # human timing error in seconds
 	if aim._armed_in > 0.0:
 		return
-	var want := (origin.global_position - player.global_position).angle()
-	var remaining := wrapf(want - aim._angle, -PI, PI)   # the sweep adds to the angle
-	var lead := deg_to_rad(aim.current_speed() if aim.has_method("current_speed") else aim.sweep_speed) * aim_err
-	if remaining <= lead and remaining > lead - 0.25:
-		var down := InputEventAction.new()
-		down.action = "fire_laser"
-		down.pressed = true
-		Input.parse_input_event(down)
-		fire_release = true
+	var mode: String = aim.mode_name()
+	if mode == "POWER SHOT":
+		if not aim._charging:
+			_laser_key(true)
+		elif aim.bot_should_release(aim_err):
+			_laser_key(false)
+		return
+	if mode == "BEAT DROP":
+		if absf(aim.to_next_beat() - aim_err) < 0.012:
+			_laser_key(true)
+			fire_release = true
+		return
+	# SWEEP and TRICK SHOT: fire when the line reaches an angle that hits
+	var lead := deg_to_rad(aim.current_speed()) * aim_err
+	for want: float in aim.bot_want_angles():
+		var remaining := wrapf(want - aim._angle, -PI, PI)   # the sweep adds to the angle
+		if remaining <= lead and remaining > lead - 0.25:
+			_laser_key(true)
+			fire_release = true
+			return
+
+
+func _laser_key(pressed: bool) -> void:
+	var ev := InputEventAction.new()
+	ev.action = "fire_laser"
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
 
 
 func _tick() -> void:

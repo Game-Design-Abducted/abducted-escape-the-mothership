@@ -9,8 +9,10 @@ extends Control
 ##
 ## Each page shows Fah's animated art (assets/story/) behind the text.
 ##
+## The text types itself out (pixel fonts like the rest of the game). The first
+## key press shows the whole page, the next one continues.
+##
 ## TODO Yang:
-##  - typewriter text effect, pixel font
 ##  - "loading" screen, could just be a short fade here
 
 const ART := {
@@ -36,11 +38,14 @@ const PAGES := {
 
 @onready var title_label: Label = $VBox/Title
 @onready var body_label: Label = $VBox/Body
+@onready var hint_label: Label = $VBox/Hint
 
 const INPUT_DELAY_MSEC := 600   # so a key held from the last screen doesn't skip this one
+const CHARS_PER_SEC := 55.0
 
 var _accept_input_at := 0
 var _left := false
+var _typing: Tween
 
 
 func _ready() -> void:
@@ -55,12 +60,35 @@ func _ready() -> void:
 	# A timestamp, not an awaited timer: a pending await kept this screen
 	# (and its art) alive when the scene changed before the timer fired.
 	_accept_input_at = Time.get_ticks_msec() + INPUT_DELAY_MSEC
+	_type_out()
+
+
+## Typewriter: reveal the body text letter by letter, then blink the hint
+func _type_out() -> void:
+	body_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING   # no re-wrapping while typing
+	body_label.visible_ratio = 0.0
+	hint_label.modulate.a = 0.0
+	_typing = create_tween()
+	_typing.tween_property(body_label, "visible_ratio", 1.0, body_label.text.length() / CHARS_PER_SEC)
+	_typing.finished.connect(_show_hint)
+
+
+func _show_hint() -> void:
+	body_label.visible_ratio = 1.0
+	hint_label.modulate.a = 1.0
+	var blink := create_tween().set_loops()
+	blink.tween_property(hint_label, "modulate:a", 0.35, 0.6)
+	blink.tween_property(hint_label, "modulate:a", 1.0, 0.6)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _left or Time.get_ticks_msec() < _accept_input_at:
 		return
 	if (event is InputEventKey or event is InputEventMouseButton) and event.is_pressed():
+		if _typing and _typing.is_running():
+			_typing.kill()   # first press: show the whole page
+			_show_hint()
+			return
 		_left = true
 		if GameState.story_id == "ending":
 			GameState.goto("end")

@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://ccd2kx8pn3ew2"]
+[gd_scene load_steps=5 format=3 uid="uid://ccd2kx8pn3ew2"]
 
 [ext_resource type="Script" path="res://ui/story_screen.gd" id="1_story"]
 [ext_resource type="Texture2D" uid="uid://cdpk7elhx8nq4" path="res://assets/home/Background.jpg" id="2_bg"]
+[ext_resource type="FontFile" path="res://assets/fonts/Minecraft.ttf" id="3_title_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/VT323.ttf" id="4_body_font"]
 
 [node name="StoryScreen" type="Control"]
 layout_mode = 3
@@ -59,13 +61,15 @@ alignment = 1
 [node name="Title" type="Label" parent="VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.82, 0, 1)
-theme_override_font_sizes/font_size = 40
+theme_override_fonts/font = ExtResource("3_title_font")
+theme_override_font_sizes/font_size = 36
 text = "TITLE"
 horizontal_alignment = 1
 
 [node name="Body" type="Label" parent="VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_fonts/font = ExtResource("4_body_font")
+theme_override_font_sizes/font_size = 30
 text = "Story text"
 horizontal_alignment = 1
 autowrap_mode = 3
@@ -73,6 +77,7 @@ autowrap_mode = 3
 [node name="Hint" type="Label" parent="VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.6)
-theme_override_font_sizes/font_size = 18
+theme_override_fonts/font = ExtResource("4_body_font")
+theme_override_font_sizes/font_size = 24
 text = "Press any key to continue"
 horizontal_alignment = 1
