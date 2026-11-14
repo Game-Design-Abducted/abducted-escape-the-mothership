@@ -279,7 +279,7 @@ func _aim_tick() -> void:
 		return
 	var want := (origin.global_position - player.global_position).angle()
 	var remaining := wrapf(want - aim._angle, -PI, PI)   # the sweep adds to the angle
-	var lead := deg_to_rad(aim.sweep_speed) * aim_err
+	var lead := deg_to_rad(aim.current_speed() if aim.has_method("current_speed") else aim.sweep_speed) * aim_err
 	if remaining <= lead and remaining > lead - 0.25:
 		var down := InputEventAction.new()
 		down.action = "fire_laser"

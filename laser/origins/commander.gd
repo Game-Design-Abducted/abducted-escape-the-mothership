@@ -15,6 +15,8 @@ extends Origin
 ##  - tune the numbers below with playtesting (all in the Inspector)
 
 @export var move_speed := 90.0
+## Speed multiplier while the player aims the laser (it keeps moving, but fairly)
+@export var aiming_speed_factor := 0.5
 ## Speed is move_speed times a random number between these two
 @export var speed_min_factor := 0.6
 @export var speed_max_factor := 1.5
@@ -43,6 +45,8 @@ func follow_path(path: Path2D) -> void:
 
 
 func _process(delta: float) -> void:
+	if PauseMenu.open:
+		return   # the pause menu is up (it runs while paused for aiming, but not then)
 	_animate(delta)
 	if _path == null or destroyed:
 		return
@@ -54,5 +58,8 @@ func _process(delta: float) -> void:
 		_change_in = maxf(randf_range(change_min, change_max), 0.1)   # 0 would mean jitter
 		var direction := -signf(_velocity) if randf() < turn_chance else signf(_velocity)
 		_velocity = direction * move_speed * randf_range(speed_min_factor, speed_max_factor)
-	_offset = fposmod(_offset + _velocity * delta, length)
+	var step := _velocity * delta
+	if get_tree().paused:
+		step *= aiming_speed_factor
+	_offset = fposmod(_offset + step, length)
 	global_position = _path.to_global(_path.curve.sample_baked(_offset))

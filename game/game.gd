@@ -89,6 +89,8 @@ const TAUNTS_HIT := {
 	1: ["OW! my shell!", "that... cracked something", "hey! rude!"],
 	2: ["that tickled.", "OK that one hurt", "you'll pay for that!"],
 }
+## Shown after a miss: the next shot gets easier (laser_manager.gd PITY_*)
+const PITY_WORDS := ["laser out of pity: target BIGGER", "the laser believes in you", "aim assist: activated (shh)", "bigger target unlocked"]
 const VICTORY_WORDS := ["WOOHOO!", "EGG-CELLENT!", "GET REKT, ALIEN", "HOME, HERE I COME!"]
 
 var _last_hp := -1
@@ -164,6 +166,9 @@ func _ready() -> void:
 
 	# 9. Screen feel: fade in, shake, flashes, the origin bulging when a monster comes out
 	_setup_feel(origin)
+
+	# 11. Pause menu (ESC / P): resume, restart level, quit to menu
+	add_child(PauseMenu.new())
 
 	# 7. Start the clock
 	GameState.begin_level()
@@ -273,6 +278,9 @@ func _on_laser_fired_feel(hit: bool) -> void:
 	if hit and hit_stop_time > 0.0:
 		Engine.time_scale = 0.05
 		get_tree().create_timer(hit_stop_time, true, false, true).timeout.connect(_end_hit_stop)
+	if not hit and is_instance_valid(_player):
+		FloatText.spawn(_level, _player.global_position + Vector2(0, -36), PITY_WORDS.pick_random(),
+				Color(1.0, 0.9, 0.3), 20, 34.0, 1.6)
 	if not is_instance_valid(_origin) or _origin.destroyed:
 		return
 	var lines: Dictionary = TAUNTS_HIT if hit else TAUNTS_MISS

@@ -24,8 +24,8 @@ extends CharacterBody2D
 ##  - bug fixing
 
 @export var speed := 180.0
-@export var max_hp := 3
-@export var invincible_time := 1.0
+@export var max_hp := 4
+@export var invincible_time := 1.5
 @export var attack_cooldown := 0.25
 @export var bullet_scene: PackedScene = preload("res://player/bullet.tscn")
 

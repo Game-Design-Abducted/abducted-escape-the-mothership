@@ -11,7 +11,7 @@ radius = 16.0
 [node name="EnemyFast" type="PathFollow2D" groups=["enemies"]]
 rotates = false
 script = ExtResource("1_enemy")
-speed = 140.0
+speed = 120.0
 max_hp = 1
 zigzag_amplitude = 14.0
 zigzag_speed = 2.5

@@ -350,6 +350,16 @@ func _level_2_checks() -> void:
 
 
 ## Waits (up to `seconds`) until the scene with this root name is showing
+## The level's pause menu (by script path: naming the PauseMenu class here would
+## compile it before the autoloads exist)
+func _pause_menu_of(scene: Node) -> Node:
+	var script := load("res://ui/pause_menu.gd")
+	for c in scene.get_children():
+		if c.get_script() == script:
+			return c
+	return null
+
+
 func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
 	var deadline := Time.get_ticks_msec() + int(seconds * 1000.0)
 	while Time.get_ticks_msec() < deadline:
@@ -557,8 +567,24 @@ func _run() -> void:
 	var clock: float = _state.time_left
 	await create_timer(0.3).timeout
 	_check("clock is frozen while aiming", clock == _state.time_left)
+	# Pause menu while aiming: the line freezes, and RESUME goes back to aiming
+	var pm: Node = _pause_menu_of(game)
+	pm.pause()
+	var angle_before: float = aim._angle
+	await create_timer(0.3).timeout
+	_check("pause menu opens during aiming and freezes the aim line", pm.is_open() and paused and aim._angle == angle_before)
+	pm.resume()
+	_check("resume goes back to aiming (still paused for the laser)", not pm.is_open() and paused)
 	var to_origin: Vector2 = (origin.global_position - player.global_position).normalized()
+	# Lock-on: the sweep is slower when pointing at the target than when pointing away
+	aim._angle = (-to_origin).angle()
+	var far_speed: float = aim.current_speed()
+	aim._angle = to_origin.angle()
+	var near_speed: float = aim.current_speed()
+	_check("aim slows down next to the target (lock-on)", near_speed < far_speed * 0.6, "%.0f vs %.0f deg/s" % [near_speed, far_speed])
+	var radius_before: float = origin.hit_radius
 	await _fire(aim, -to_origin)
+	_check("pity laser: a miss makes the target bigger", origin.hit_radius > radius_before, "%.0f -> %.0f px" % [radius_before, origin.hit_radius])
 	_check("miss: game resumes, origin alive, laser recharging", not paused and not origin.destroyed and lm._charging,
 			"needs %d kills" % lm._needed)
 
@@ -662,6 +688,33 @@ func _run() -> void:
 	ok = await _wait_for_scene("Game")
 	await process_frame
 	_check("intro story leads to level 1", ok and _state.current_level == 1 and _state.running, current_scene.name)
+
+	# Pause menu in normal play: pauses, then QUIT TO MENU stops the clock and goes to the title
+	await create_timer(0.5).timeout
+	var menu: Node = _pause_menu_of(current_scene)
+	var ev_pause := InputEventAction.new()
+	ev_pause.action = "pause"
+	ev_pause.pressed = true
+	Input.parse_input_event(ev_pause)
+	await process_frame
+	await process_frame
+	_check("ESC opens the pause menu and pauses the game", menu != null and menu.is_open() and paused)
+	var t_paused: float = _state.time_left
+	await create_timer(0.3).timeout
+	_check("clock is frozen while the pause menu is open", t_paused == _state.time_left)
+	var old_scene := current_scene
+	menu._restart()
+	var deadline := Time.get_ticks_msec() + 3000
+	while (current_scene == old_scene or current_scene == null) and Time.get_ticks_msec() < deadline:
+		await process_frame
+	await create_timer(0.3).timeout
+	menu = _pause_menu_of(current_scene)
+	_check("RESTART LEVEL reloads the level, unpaused", current_scene != old_scene and current_scene.name == "Game"
+			and not paused and menu != null and not menu.is_open() and _state.running, current_scene.name)
+	menu.pause()
+	menu._quit()
+	ok = await _wait_for_scene("TitleScreen")
+	_check("QUIT TO MENU goes to the title and stops the clock", ok and not _state.running and not paused, current_scene.name)
 
 	print("")
 	print("ALL PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures)
