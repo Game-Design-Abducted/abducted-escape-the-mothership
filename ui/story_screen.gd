@@ -1,19 +1,5 @@
 extends Control
-## Story screen. Yang's.
-##
-## Shown between levels. GameState.story_id decides which page:
-##   "intro"  -> before level 1
-##   "level2" -> before level 2
-##   "ending" -> after level 2 (then the end screen)
-## Press any key / click to continue.
-##
-## Each page shows Fah's animated art (assets/story/) behind the text.
-##
-## The text types itself out (pixel fonts like the rest of the game). The first
-## key press shows the whole page, the next one continues.
-##
-## TODO Yang:
-##  - "loading" screen, could just be a short fade here
+## Story screen between levels, GameState.story_id picks the page. Yang's.
 
 const ART := {
 	"intro": "res://assets/story/Story_Intro.tscn",
@@ -57,8 +43,7 @@ func _ready() -> void:
 	add_child(art_node)
 	move_child(art_node, $Background.get_index() + 1)   # over the plain background, under the text
 	$Background.hide()
-	# A timestamp, not an awaited timer: a pending await kept this screen
-	# (and its art) alive when the scene changed before the timer fired.
+	# timestamp, not an awaited timer: a pending await kept this screen alive after the scene changed
 	_accept_input_at = Time.get_ticks_msec() + INPUT_DELAY_MSEC
 	_type_out()
 

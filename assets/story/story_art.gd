@@ -1,19 +1,7 @@
 extends Control
 ## Animated story / end-screen art. Fah's.
-##
-## Every node in the scene can move by itself (children of children too, so a
-## trail parented under the spaceship follows it). Select a node, then in the
-## Inspector (bottom: Metadata) set:
-##   motion  = "bob" | "hop" | "pulse" | "glow" | "twinkle" | "blink" | "shake" | "flyaway"
-##   amp     = how far in px (bob, hop, shake), or how much scale (pulse, e.g. 0.03)
-##   speed   = how fast
-##   phase   = start offset, so things don't move in sync
-##   low     = lowest alpha (twinkle)
-##   move    = Vector2 travel distance (flyaway)
-## Nodes without "motion" stay still. The pivot you set in the Inspector is
-## kept; nodes with no pivot scale around their centre.
-##
-## Use: story_screen.gd puts one of these behind the text for each page.
+## set metadata on a node: motion = bob|hop|pulse|glow|twinkle|blink|shake|flyaway,
+## optional amp, speed, phase, low (twinkle), move (flyaway). no motion = stays still.
 
 @export var fade_in := 0.5
 

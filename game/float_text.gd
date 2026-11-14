@@ -1,11 +1,6 @@
 class_name FloatText
 extends Label
-## Floating pop-up words ("SPLAT!", "PFFFT!", taunts). Ploy's.
-##
-##   FloatText.spawn(parent, global_pos, "SPLAT!", Color.YELLOW)
-##
-## Pops in, drifts up, fades out and frees itself. Runs while the game is
-## paused too, so words started just before the laser freeze still finish.
+## Floating pop-up words like "SPLAT!". Ploy's. Runs while paused so words finish during the laser freeze.
 
 const FONT := preload("res://assets/fonts/VT323.ttf")
 

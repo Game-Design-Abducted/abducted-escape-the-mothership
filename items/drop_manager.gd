@@ -1,20 +1,6 @@
 extends Node
-## Space Junk drops. Ploy's (Yang's idea: a bomb you step on that clears the area).
-##
-## Monsters sometimes drop a funny item when they die. Walk over it to use it:
-##   Whoopee Bomb   PFFFT -> after a short wheeze every monster within
-##                  BOMB_RADIUS pops. Those kills count for the laser charge,
-##                  so a good bomb brings the laser sooner.
-##   Disco Ball     every monster on the map stops and dances for DISCO_TIME
-##                  (dancing monsters can't hurt you, but you can shoot them)
-##   Space Burrito  +1 heart (only drops when you're hurt)
-##
-## Drops are random (DROP_CHANCE per kill) with a pity timer: if nothing has
-## dropped for PITY_TIME seconds, the next kill always drops something. The
-## first drop comes early (FIRST_DROP_AFTER) so players learn it exists.
-##
-## game.gd calls setup(level, player) and listens to `boom` / Events.item_used
-## for the shake, flash and sounds.
+## Space Junk drops. Ploy's, bomb idea from Yang. game.gd calls setup(level, player).
+## DROP_CHANCE per kill, but after PITY_TIME with no drop the next kill always drops one.
 
 signal boom(position: Vector2)   ## the Whoopee Bomb went off (game.gd shakes the screen)
 

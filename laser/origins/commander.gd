@@ -1,41 +1,29 @@
 extends Origin
-## Alien Commander, the level 2 moving origin. Ploy's.
-##
-## game.gd calls follow_path(level.get_origin_path()), and it walks the loop
-## Mew drew in level 2's `OriginPath`.
-##
-## It KEEPS MOVING while the player aims the laser (process mode = Always), so
-## the player has to time the sweeping beam against a moving target. That's the
-## level 2 challenge from the design doc.
-##
-## To make the beam hard to time, every 1 to 2.5 seconds it picks a new speed
-## and sometimes turns around. It never stops, so it is never a free hit.
-##
-## TODO Ploy:
-##  - tune the numbers below with playtesting (all in the Inspector)
+## Alien Commander, level 2 origin that walks OriginPath. Ploy's.
+# keeps moving while the player aims (process mode Always), that's the level 2 challenge
 
 @export var move_speed := 90.0
-## Speed multiplier while the player aims the laser (it keeps moving, but fairly)
+## speed multiplier while the player aims
 @export var aiming_speed_factor := 0.5
-## Speed is move_speed times a random number between these two
+## random move_speed multiplier range
 @export var speed_min_factor := 0.6
 @export var speed_max_factor := 1.5
-## Seconds between changes of speed / direction (random between these two)
+## seconds between speed/direction changes
 @export var change_min := 1.0
 @export var change_max := 2.5
-## Chance (0 to 1) to turn around at each change
+## chance (0 to 1) to turn around at each change
 @export var turn_chance := 0.35
 
 var _path: Path2D
 var _offset := 0.0
-var _velocity := 0.0   # px/s along the path, negative = walking backwards
+var _velocity := 0.0   # px/s, negative = backwards
 var _change_in := 0.0
 
 
 func _ready() -> void:
 	super()
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	breathe_speed = 6.0     # reads as a quick walk instead of slow breathing
+	breathe_speed = 6.0     # reads as walking
 	_velocity = move_speed
 	_change_in = maxf(randf_range(change_min, change_max), 0.1)   # 0 would mean jitter
 
@@ -46,7 +34,7 @@ func follow_path(path: Path2D) -> void:
 
 func _process(delta: float) -> void:
 	if PauseMenu.open:
-		return   # the pause menu is up (it runs while paused for aiming, but not then)
+		return   # runs while paused for aiming, but not under the pause menu
 	_animate(delta)
 	if _path == null or destroyed:
 		return

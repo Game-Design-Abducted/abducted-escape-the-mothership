@@ -1,18 +1,5 @@
 extends SceneTree
-## =====================================================================
-## SMOKE TEST: plays the whole game loop automatically (about 25 seconds).
-## For Ploy (integrator): run this before merging a PR.
-## =====================================================================
-##   godot --headless --path . -s tools/smoke_test.gd
-##
-## (Replace `godot` with the path to your Godot .exe if it's not on PATH.)
-## Prints PASS/FAIL for each step. Exit code 0 = everything passed.
-##
-## It checks: level loads, monsters spawn, contact damage, bullets kill,
-## laser charges from kills, pickup pauses the game, miss -> retry,
-## hit -> win -> Level 2, Commander moves (also while aiming), timeout -> lose.
-##
-## If you change a rule on purpose (e.g. laser charge), update the check here too.
+## Smoke test, plays the whole game loop (~25 s). Run before merging: godot --headless --path . -s tools/smoke_test.gd
 
 var _failures := 0
 var _events: Node
@@ -56,8 +43,7 @@ func _find_aim(game: Node) -> Node:
 	return null
 
 
-## Kill-charges the laser, walks the player onto the pickup, returns the aim node.
-## mode forces the laser mode ("sweep", "power", "beat", "trick").
+## charges the laser, picks it up, returns the aim node. mode = "sweep", "power", "beat" or "trick"
 func _get_to_aim_mode(game: Node, player: Node2D, mode := "sweep") -> Node:
 	var lm := game.get_node("LaserManager")
 	lm.next_mode = mode
@@ -85,7 +71,7 @@ func _laser_key(pressed: bool) -> void:
 	await process_frame
 
 
-## POWER SHOT: hold until the bar reaches `power`, then let go (power > 1 = never let go)
+## power > 1 = never let go
 func _power_shot(aim: Node, power: float) -> void:
 	await create_timer(0.5).timeout   # arm delay
 	await _laser_key(true)
@@ -98,7 +84,7 @@ func _power_shot(aim: Node, power: float) -> void:
 	await process_frame
 
 
-## BEAT DROP: press on every beat (or mash = press 6 times right away)
+## mash = press 6 times right away
 func _beat_drop(aim: Node, mash: bool) -> void:
 	if mash:
 		await create_timer(0.9).timeout
@@ -134,9 +120,7 @@ func _fire(aim: Node, direction: Vector2) -> void:
 	await process_frame
 
 
-## Which way to shoot at `target` from `distance` px away without a maze wall in
-## between. Where the monster is by now depends on timing, so a fixed side can put
-## the shooter behind a wall. Falls back to RIGHT if all four sides are blocked.
+## a fixed side can put the shooter behind a wall, so find a clear one. RIGHT if all are blocked.
 func _clear_shot_direction(target: Node2D, distance: float) -> Vector2:
 	var space := target.get_world_2d().direct_space_state
 	for dir: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP]:
@@ -153,13 +137,12 @@ func _clear_shot_direction(target: Node2D, distance: float) -> Vector2:
 	return Vector2.RIGHT
 
 
-## Runs an enemy's movement by hand, frame by frame, so the checks don't depend on real time
+## moves an enemy by hand so the checks don't depend on real time
 func _step(enemy: Node, seconds: float) -> void:
 	for i in int(round(seconds * 60.0)):
 		enemy._process(1.0 / 60.0)
 
 
-## How far the enemy is from the path line (0 = exactly on it)
 func _off_path(enemy: Node2D, path: Path2D) -> float:
 	return enemy.position.distance_to(path.curve.get_closest_point(enemy.position))
 
@@ -171,8 +154,7 @@ func _spawn_on_test_path(scene: String, path: Path2D) -> Node:
 	return enemy
 
 
-## The 3 monster types must move differently (no level, no player needed).
-## Test path is an L: 400 px right, then 400 px down. Corner at progress 400.
+## test path is an L: 400 px right, then 400 px down, corner at progress 400
 func _enemy_type_checks() -> void:
 	var path := Path2D.new()
 	path.curve = Curve2D.new()
@@ -180,7 +162,7 @@ func _enemy_type_checks() -> void:
 		path.curve.add_point(p)
 	root.add_child(path)
 
-	# Basic: walks the line at its speed, no wobble, no stops
+	# Basic
 	var basic: Node2D = _spawn_on_test_path("res://enemies/enemy_basic.tscn", path)
 	var max_off := 0.0
 	for i in 60:
@@ -191,7 +173,7 @@ func _enemy_type_checks() -> void:
 			"progress %.0f, expected %.0f" % [basic.progress, basic.speed * 10.0])
 	_check("basic monster stays on the path", max_off < 1.0, "max %.1f px off" % max_off)
 
-	# Fast: zig-zags sideways on BOTH legs (a plain v_offset would only wobble on the flat leg)
+	# Fast: must zig-zag on both legs (a plain v_offset only wobbles on the flat leg)
 	var fast: Node2D = _spawn_on_test_path("res://enemies/enemy_fast.tscn", path)
 	var amp = fast.get("zigzag_amplitude")
 	if amp == null:
@@ -215,7 +197,7 @@ func _enemy_type_checks() -> void:
 		_check("fast monster still moves forward at its speed", absf(fast.progress - fast.speed * 4.0) < 2.0,
 				"progress %.0f" % fast.progress)
 
-	# Hatching: a monster that just came out can't be hurt and can't hurt yet
+	# Hatching
 	var hatchling: Node = _spawn_on_test_path("res://enemies/enemy_basic.tscn", path)
 	var protection = hatchling.get("spawn_protection")
 	if protection == null or protection <= 0.0:
@@ -236,7 +218,7 @@ func _enemy_type_checks() -> void:
 		_check("once hatched, one bullet kills a basic monster", hatchling._dead)
 		_events.enemy_blocked.disconnect(count_blocked)
 
-	# Tank: stops at the corner for corner_pause seconds, then carries on
+	# Tank
 	var tank: Node2D = _spawn_on_test_path("res://enemies/enemy_tank.tscn", path)
 	var pause_s = tank.get("corner_pause")
 	if pause_s == null:
@@ -250,15 +232,13 @@ func _enemy_type_checks() -> void:
 		_check("tank waits at the corner", absf(tank.progress - at_corner) < 0.5, "progress %.1f" % tank.progress)
 		_step(tank, pause_s * 0.5 + 1.0)
 		_check("tank moves on after corner_pause", tank.progress > at_corner + 20.0, "progress %.1f" % tank.progress)
-		# Next lap: wrap past the end, then the same corner must stop it again
 		tank.progress = 795.0
 		_step(tank, 0.2)
 		tank.progress = 380.0
 		_step(tank, 0.5)
 		_check("tank stops at the corner again on the next lap", absf(tank.progress - 400.0) < 2.0, "progress %.1f" % tank.progress)
 
-		# A path that crosses itself: point 4 (100,0) also lies on the first leg.
-		# The tank must not stop on the first leg at progress 100, only at the real corner (500).
+		# self-crossing path: point 4 (100,0) is also on the first leg, tank must only stop at 500
 		var loop_path := Path2D.new()
 		loop_path.curve = Curve2D.new()
 		for p in [Vector2(0, 0), Vector2(200, 0), Vector2(200, 100), Vector2(100, 100), Vector2(100, 0), Vector2(100, -100)]:
@@ -273,7 +253,7 @@ func _enemy_type_checks() -> void:
 		_check("tank stops at that later corner", absf(tank2.progress - 500.0) < 2.0, "progress %.1f" % tank2.progress)
 		loop_path.queue_free()
 
-	# Waves: every wave names a real monster type
+	# Waves
 	var waves: Script = load("res://enemies/wave_manager.gd")
 	var bad := []
 	for level in waves.WAVES:
@@ -286,7 +266,6 @@ func _enemy_type_checks() -> void:
 	await process_frame
 
 
-## Monsters per second over one pass of a level's wave table
 func _spawn_rate(waves: Array) -> float:
 	var count := 0
 	var seconds := 0.0
@@ -296,8 +275,7 @@ func _spawn_rate(waves: Array) -> float:
 	return count / seconds
 
 
-## Level 2: the Commander must be hard to time (speed changes, turns around)
-## but fair (stays on its path, never faster than its top speed, never stops).
+## Commander must be hard to time but fair: stays on its path, under top speed, never stops
 func _level_2_checks() -> void:
 	var path := Path2D.new()
 	path.position = Vector2(100, 50)   # not at 0,0, so a mix-up of local and global positions shows
@@ -355,7 +333,7 @@ func _level_2_checks() -> void:
 		_check("Commander never stops or crawls", v_min >= base * slow - 1.0, "min %.0f px/s" % v_min)
 	path.queue_free()
 
-	# The last wave repeats faster and faster. It must level off, or the screen floods.
+	# the last wave repeats faster, it must level off or the screen floods
 	var flood_path := Path2D.new()
 	flood_path.curve = Curve2D.new()
 	flood_path.curve.add_point(Vector2.ZERO)
@@ -372,7 +350,7 @@ func _level_2_checks() -> void:
 	_check("repeating waves stop getting faster at min_speed_factor",
 			floor_factor != null and floor_factor >= 0.3 and manager._speed_factor >= floor_factor - 0.001,
 			"factor %.3f, floor %s" % [manager._speed_factor, str(floor_factor)])
-	# ...and the map has a cap, so a player who stops shooting does not get hundreds of monsters
+	# map cap, so idling doesn't spawn hundreds of monsters
 	manager.max_alive = 5
 	for i in 30:
 		manager._on_timer()
@@ -396,9 +374,7 @@ func _level_2_checks() -> void:
 	await process_frame
 
 
-## Waits (up to `seconds`) until the scene with this root name is showing
-## The level's pause menu (by script path: naming the PauseMenu class here would
-## compile it before the autoloads exist)
+## by script path: naming the PauseMenu class here would compile it before the autoloads exist
 func _pause_menu_of(scene: Node) -> Node:
 	var script := load("res://ui/pause_menu.gd")
 	for c in scene.get_children():
@@ -416,13 +392,12 @@ func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
 	return false
 
 
-## File name of the picture on the end screen ("" if there is none)
 func _end_art() -> String:
 	var art := current_scene.get_node_or_null("VBox/Art") as TextureRect
 	return art.texture.resource_path.get_file() if art and art.texture else ""
 
 
-## "lose.wav playing" style description of the end screen's sound ("" if there is none)
+## e.g. "lose.wav playing", "" if none
 func _end_sound() -> String:
 	var jingle := current_scene.get_node_or_null("Jingle") as AudioStreamPlayer
 	if jingle == null or jingle.stream == null:
@@ -430,7 +405,6 @@ func _end_sound() -> String:
 	return "%s %s" % [jingle.stream.resource_path.get_file(), "playing" if jingle.playing else "silent"]
 
 
-## Which track game.gd is playing, e.g. "bgm_level.ogg playing"
 func _music_of(game: Node) -> String:
 	var music := game.get_node_or_null("Music") as AudioStreamPlayer
 	if music == null or music.stream == null:
@@ -447,8 +421,7 @@ func _press_any_key() -> void:
 		await process_frame
 
 
-## Every level must keep the node names from docs/contracts.md section 5,
-## because game.gd finds them by name. Returns what is missing or wrong.
+## game.gd finds level nodes by name (docs/contracts.md section 5), so they must stay
 func _level_problems(scene_path: String, needs_origin_path: bool) -> Array:
 	var problems := []
 	var level: Node = load(scene_path).instantiate()
@@ -464,8 +437,7 @@ func _level_problems(scene_path: String, needs_origin_path: bool) -> Array:
 		for path in level.get_node("Paths").get_children():
 			if path is Path2D and path.curve != null and path.curve.point_count >= 2:
 				routes += 1
-				# Monsters are children of the path, so a path hidden in the editor
-				# (eye icon) makes its monsters invisible while they still hurt.
+				# monsters are children of the path, so a hidden path makes invisible monsters that still hurt
 				if not path.visible:
 					problems.append("Paths/%s is hidden, so its monsters are invisible" % path.name)
 			else:
@@ -498,7 +470,7 @@ func _level_contract_checks() -> void:
 func _run() -> void:
 	_events = root.get_node("Events")
 	_state = root.get_node("GameState")
-	# Watchdog: if a step crashes, the test would wait forever. Stop after 150 s.
+	# watchdog: a crashed step would wait forever
 	create_timer(150.0).timeout.connect(func():
 		print("FAIL  test did not finish within 150 s (a step crashed, see the errors above)")
 		quit(2))
@@ -512,7 +484,6 @@ func _run() -> void:
 	var game: Node = await _load_game(1)
 	_check("level 1 loads and the clock starts", game.name == "Game" and _state.running)
 	_check("level 1 plays the level music", _music_of(game) == "bgm_level.ogg playing", _music_of(game))
-	# game.gd adds one AudioStreamPlayer per sound effect, so listen for those
 	var heard := {}
 	game.child_entered_tree.connect(func(node: Node):
 		if node is AudioStreamPlayer and node.stream != null:
@@ -523,7 +494,7 @@ func _run() -> void:
 	var enemies := get_nodes_in_group("enemies")
 	_check("monsters spawn", enemies.size() > 0, "%d after 3 s" % enemies.size())
 
-	# Contact damage must repeat while the player stays on a monster
+	# Contact damage repeats
 	var rider: Node2D = enemies[0]
 	for i in 108:   # 1.8 s
 		if is_instance_valid(rider):
@@ -534,7 +505,7 @@ func _run() -> void:
 	player.global_position = Vector2(300, 300)
 	await create_timer(1.1).timeout
 
-	# A real bullet kills a monster and charges the laser
+	# Bullet kills and charges the laser
 	var lm := game.get_node("LaserManager")
 	var target: Node2D = get_nodes_in_group("enemies")[-1]
 	var kills_before: int = lm._kills
@@ -549,15 +520,15 @@ func _run() -> void:
 	_check("kill charges the laser", lm._kills == kills_before + 1, "%d / %d" % [lm._kills, lm._needed])
 	player.global_position = Vector2(300, 300)
 
-	# Space Junk drops: each one dropped right under the player, so stepping on it is instant
+	# Space Junk drops, dropped under the player so pickup is instant
 	var dm := game.get_node("DropManager")
-	# Burrito: +1 HP
+	# Burrito
 	player.hp = player.max_hp - 1
 	dm.drop("snack", player.global_position)
 	for i in 6:
 		await physics_frame
 	_check("Space Burrito heals 1 HP", player.hp == player.max_hp, "hp %d/%d" % [player.hp, player.max_hp])
-	# Disco Ball: every monster dances, stays put and can't hurt
+	# Disco Ball
 	var dancers := get_nodes_in_group("enemies").filter(func(e): return not e._dead)
 	dm.drop("disco", player.global_position)
 	for i in 6:
@@ -579,7 +550,7 @@ func _run() -> void:
 				"moved %.1f px, hp %d -> %d" % [dancer.progress - before_progress if is_instance_valid(dancer) else -1.0, hp_before, player.hp])
 	player.global_position = Vector2(300, 300)
 	await create_timer(dm.DISCO_TIME).timeout
-	# Whoopee Bomb: monsters in range pop, and the kill counts like any other
+	# Whoopee Bomb
 	var victim: Node2D = null
 	for e in get_nodes_in_group("enemies"):
 		if not e._dead:
@@ -606,7 +577,7 @@ func _run() -> void:
 	player.global_position = Vector2(300, 300)
 	await create_timer(1.1).timeout
 
-	# Laser: pickup pauses, miss resumes and needs a recharge
+	# Laser: pickup pauses, miss needs a recharge
 	var origin: Node2D = get_first_node_in_group("origin")
 	var aim: Node = await _get_to_aim_mode(game, player)
 	_check("laser appears after enough kills and pickup starts aim mode", aim != null)
@@ -614,7 +585,7 @@ func _run() -> void:
 	var clock: float = _state.time_left
 	await create_timer(0.3).timeout
 	_check("clock is frozen while aiming", clock == _state.time_left)
-	# Pause menu while aiming: the line freezes, and RESUME goes back to aiming
+	# Pause menu while aiming
 	var pm: Node = _pause_menu_of(game)
 	pm.pause()
 	var angle_before: float = aim._angle
@@ -623,7 +594,7 @@ func _run() -> void:
 	pm.resume()
 	_check("resume goes back to aiming (still paused for the laser)", not pm.is_open() and paused)
 	var to_origin: Vector2 = (origin.global_position - player.global_position).normalized()
-	# Lock-on: the sweep is slower when pointing at the target than when pointing away
+	# Lock-on: sweep is slower near the target
 	aim._angle = (-to_origin).angle()
 	var far_speed: float = aim.current_speed()
 	aim._angle = to_origin.angle()
@@ -637,7 +608,7 @@ func _run() -> void:
 	_check("miss: game resumes, origin alive, laser recharging", not paused and not origin.destroyed and lm._charging,
 			"needs %d kills" % lm._needed)
 
-	# Laser modes: each one can miss, and each one can hit
+	# Laser modes
 	aim = await _get_to_aim_mode(game, player, "power")
 	_check("POWER SHOT: the HUD names the laser mode", modes_seen.has("POWER SHOT"), str(modes_seen))
 	await _power_shot(aim, 0.2)
@@ -653,8 +624,7 @@ func _run() -> void:
 	await _fire(aim, to_origin)
 	_check("TRICK SHOT: a straight shot doesn't count", not paused and aim.result == 0)
 
-	# The origin has to take laser_hits_needed hits, the last one wins the level.
-	# 3 here so every mode gets a hit: trick, beat, then power wins.
+	# 3 hits so every mode gets one: trick, beat, then power wins
 	origin.laser_hits_needed = 3
 	aim = await _get_to_aim_mode(game, player, "trick")
 	var bank: Array = aim.bot_want_angles()
@@ -692,7 +662,7 @@ func _run() -> void:
 	_check("level 2 plays the boss music, also while paused", _music_of(game) == "bgm_boss.ogg playing", _music_of(game))
 	paused = false
 
-	# Ship pranks: each one turns on after the warning and off again
+	# Ship pranks
 	var pranks: Node = game.get_node("ShipPranks")
 	var p2: Node2D = get_first_node_in_group("player")
 	var monster := get_first_node_in_group("enemies")
@@ -721,7 +691,7 @@ func _run() -> void:
 			current_scene.get_node("VBox/Title").text)
 
 	# ---------- Screens and the rest of the flow ----------
-	# Lose screen: RETRY restarts the level you lost on
+	# Lose screen: RETRY restarts the same level
 	var retry: Button = current_scene.get_node("VBox/RetryButton")
 	_check("lose screen shows RETRY", retry.visible)
 	_check("lose screen shows the hurt astronaut", _end_art() == "Player_Hit.png", _end_art())
@@ -742,7 +712,7 @@ func _run() -> void:
 	_check("player death shows GAME OVER, not TIME UP!", ok and current_scene.get_node("VBox/Title").text == "GAME OVER",
 			current_scene.get_node("VBox/Title").text if ok else "")
 
-	# Level 2 win: ending story, then the win screen, then back to the title
+	# Level 2 win: story, win screen, title
 	game = await _load_game(2)
 	var commander: Node = get_first_node_in_group("origin")
 	for i in commander.laser_hits_needed:
@@ -768,7 +738,7 @@ func _run() -> void:
 	ok = await _wait_for_scene("TitleScreen")
 	_check("MAIN MENU leads to the title screen", ok, current_scene.name)
 
-	# Title: the hover sound is for the mouse only (the button holds keyboard focus from the start)
+	# Title: hover sound is mouse only (the button has keyboard focus from the start)
 	if ok:
 		var hover_sfx: AudioStreamPlayer = current_scene.get_node("Sfx")
 		current_scene.get_node("StartButton").focus_entered.emit()
@@ -776,21 +746,21 @@ func _run() -> void:
 		current_scene.get_node("StartButton").mouse_entered.emit()
 		_check("title: mouse hover plays the hover sound", hover_sfx.stream != null)
 
-	# Title: START begins a new game at level 1
+	# Title: START
 	if ok:
 		current_scene.get_node("StartButton").pressed.emit()
 	ok = await _wait_for_scene("StoryScreen")
 	_check("START leads to the intro story", ok and _state.story_id == "intro" and _state.current_level == 1,
 			"%s, level %d" % [_state.story_id, _state.current_level])
 	await create_timer(0.8).timeout
-	await _press_any_key()   # finish the typing
+	await _press_any_key()
 	await process_frame
-	await _press_any_key()   # continue
+	await _press_any_key()
 	ok = await _wait_for_scene("Game")
 	await process_frame
 	_check("intro story leads to level 1", ok and _state.current_level == 1 and _state.running, current_scene.name)
 
-	# Pause menu in normal play: pauses, then QUIT TO MENU stops the clock and goes to the title
+	# Pause menu in normal play
 	await create_timer(0.5).timeout
 	var menu: Node = _pause_menu_of(current_scene)
 	var ev_pause := InputEventAction.new()

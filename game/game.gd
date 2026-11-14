@@ -1,28 +1,5 @@
 extends Node2D
-## Game scene script. Ploy's. Builds and runs ONE level.
-##
-## This is the only script that knows about everyone's pieces. In order it:
-##   1. loads Mew's level for GameState.current_level
-##   2. puts Yang's player at PlayerStart
-##   3. puts Ploy's origin (egg / commander) in the level
-##   4. starts Ploy's wave manager on the level's paths
-##   5. starts Yang's laser manager
-##   6. (Kong's HUD is already inside game.tscn and just listens to Events)
-##   7. tells GameState to start the 3 minute timer
-##   8. plays the level music and every in-level sound: laser, shooting,
-##      monsters, player hurt / death, timer tick (it only listens to Events,
-##      so nobody else's script has to know about audio)
-##   9. adds the screen feel: fade in, screen shake, hit / laser flashes, music
-##      that dips while aiming (again only by listening to Events)
-##  10. starts the Space Junk drops (items/drop_manager.gd) and the jokes:
-##      pop-up kill words, the origin taunting you when you miss, a tiny
-##      freeze-frame when the laser hits, and a victory spin
-##
-## Press F6 on game.tscn to play the current level directly (level 1 by default).
-## To jump straight to level 2, change `debug_start_level` in the Inspector.
-##
-## TODO Ploy: when two systems need to talk to each other, wire them up here
-## instead of letting them reach into each other's code.
+## Game scene: builds one level and wires everyone's parts together. Ploy's.
 
 const LEVEL_SCENES := {
 	1: preload("res://levels/level_1.tscn"),
@@ -32,7 +9,6 @@ const PLAYER_SCENE := preload("res://player/player.tscn")
 const EGG_SCENE := preload("res://laser/origins/egg.tscn")
 const COMMANDER_SCENE := preload("res://laser/origins/commander.tscn")
 
-## Fah's audio. Level 1 gets the level track, level 2 the boss track.
 const MUSIC := {
 	1: preload("res://assets/audio/music/bgm_level.ogg"),
 	2: preload("res://assets/audio/music/bgm_boss.ogg"),
@@ -55,33 +31,32 @@ const SFX_TIMER_TICK := preload("res://assets/audio/sfx/timer_tick.wav")
 const SFX_IMMUNE := preload("res://assets/audio/sfx/immune_tink.wav")
 const SPAWN_MARKER := preload("res://game/spawn_marker.gd")
 const BULLET_SCENE_PATH := "res://player/bullet.tscn"
-## The clock ticks out loud for this many seconds at the end
+## seconds of loud ticking at the end
 const TICK_LAST_SECONDS := 10
 
-## Volume in dB (0 = as loud as the file). Music sits under the sound effects.
+## dB, 0 = as loud as the file
 @export var music_volume_db := -10.0
 @export var sfx_volume_db := -4.0
-## Shooting and monster sounds happen many times a second, so they are quieter
+## quieter since these play many times a second
 @export var frequent_sfx_volume_db := -12.0
 
-## Music gets this much quieter while the game is frozen for aiming the laser
+## dB drop for the music while aiming the laser
 @export var aim_music_duck_db := -8.0
 
 @export_group("Screen feel")
-## Screen shake in pixels for each event (0 = off)
+## shake in pixels, 0 = off
 @export var shake_player_hurt := 6.0
 @export var shake_laser_fired := 8.0
 @export var shake_origin_destroyed := 18.0
-## How fast a shake dies down, pixels per second
+## pixels per second
 @export var shake_fade := 40.0
 @export var shake_bomb := 12.0
-## Freeze-frame when the laser hits, in real seconds (0 = off)
+## freeze-frame on a laser hit, real seconds, 0 = off
 @export var hit_stop_time := 0.12
 
-## Pop-up word on every kill
 const KILL_WORDS := ["SPLAT!", "BONK!", "POP!", "SQUISH!", "YEET!", "BLORP!", "BOOP!", "SPLOOT!"]
 const KILL_WORD_COLORS := [Color(1.0, 0.9, 0.3), Color(0.5, 1.0, 0.6), Color(1.0, 0.55, 0.8), Color(0.6, 0.85, 1.0)]
-## What the origin says after your laser shot (level 1 = egg, level 2 = commander)
+## level 1 = egg, level 2 = commander
 const TAUNTS_MISS := {
 	1: ["missed me!", "nice try, human", "is that a laser\nor a flashlight?", "*smug egg noises*", "I'm not even moving!"],
 	2: ["TOO SLOW, EARTHLING", "I do cardio.", "aim with your\neyes open!", "catch me if you can~", "my grandma dodges\nbetter than that"],
@@ -90,7 +65,7 @@ const TAUNTS_HIT := {
 	1: ["OW! my shell!", "that... cracked something", "hey! rude!"],
 	2: ["that tickled.", "OK that one hurt", "you'll pay for that!"],
 }
-## Shown after a miss: the next shot gets easier (laser_manager.gd PITY_*)
+## after a miss the next shot is easier (laser_manager.gd PITY_*)
 const PITY_WORDS := ["laser out of pity: target BIGGER", "the laser believes in you", "aim assist: activated (shh)", "bigger target unlocked"]
 const VICTORY_WORDS := ["WOOHOO!", "EGG-CELLENT!", "GET REKT, ALIEN", "HOME, HERE I COME!"]
 
@@ -109,7 +84,7 @@ var _player: Node2D
 var _bubble: Control
 var _last_word_ms := 0
 
-## 0 = use GameState.current_level. Set 1 or 2 to force a level while testing with F6.
+## 0 = GameState.current_level. Set 1 or 2 to force a level when testing with F6.
 @export var debug_start_level := 0
 
 @onready var world: Node2D = $World
@@ -132,7 +107,7 @@ func _ready() -> void:
 	player.position = level.get_player_start()
 	level.get_entities().add_child(player)
 
-	# 3. Origin (Ploy): level 1 = egg standing still, level 2 = commander walking
+	# 3. Origin (Ploy): egg in level 1, commander in level 2
 	var origin: Origin
 	var origin_path := level.get_origin_path()
 	if level_number >= 2 and origin_path:
@@ -158,24 +133,24 @@ func _ready() -> void:
 	_player = player
 	drop_manager.setup(level, player)
 
-	# 12. Ship pranks: every ~40 s a short silly twist (lights out, floor wax...)
+	# 12. Ship pranks
 	var pranks := Node.new()
 	pranks.name = "ShipPranks"
 	pranks.set_script(SHIP_PRANKS)
 	add_child(pranks)
 	pranks.setup(level, player)
 
-	# 8. Audio (connected before the clock starts, so level_started is heard)
+	# 8. Audio, before the clock starts so level_started is heard
 	_setup_audio(level_number)
-	# Yang's bullets are added next to the player, so a new bullet there = a shot
+	# bullets get added next to the player, so a new bullet there = a shot
 	level.get_entities().child_entered_tree.connect(func(node: Node):
 		if node.scene_file_path == BULLET_SCENE_PATH:
 			_play(SFX_SHOOT, frequent_sfx_volume_db))
 
-	# 9. Screen feel: fade in, shake, flashes, the origin bulging when a monster comes out
+	# 9. Screen feel
 	_setup_feel(origin)
 
-	# 11. Pause menu (ESC / P): resume, restart level, quit to menu
+	# 11. Pause menu
 	add_child(PauseMenu.new())
 
 	# 7. Start the clock
@@ -183,8 +158,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Screen shake: only the camera moves, so nothing in the level (walls,
-	# player, pickups) changes position. The HUD is on its own layer and stays still.
+	# shake moves only the camera, so level positions and the HUD stay put
 	if _shake > 0.0:
 		_shake = move_toward(_shake, 0.0, shake_fade * delta)
 		_camera.offset = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake))
@@ -193,14 +167,13 @@ func _process(delta: float) -> void:
 
 
 func _setup_feel(origin: Origin) -> void:
-	# A camera in the middle of the screen shows exactly what no camera shows
+	# centered camera = same view as no camera
 	_camera = Camera2D.new()
 	_camera.name = "Camera"
 	_camera.position = get_viewport_rect().size / 2.0
 	add_child(_camera)
 	_camera.make_current()
 
-	# One full-screen colour layer, used for the fade-in and for flashes
 	var layer := CanvasLayer.new()
 	layer.name = "ScreenFx"
 	layer.layer = 5
@@ -210,10 +183,9 @@ func _setup_feel(origin: Origin) -> void:
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_flash.color = Color(0, 0, 0, 1)
 	layer.add_child(_flash)
-	_flash_to(Color(0, 0, 0, 0), 0.5)   # fade in from black
+	_flash_to(Color(0, 0, 0, 0), 0.5)
 
-	# (a method, not a lambda: a lambda that never touches `self` would stay
-	# connected to Events after this scene is gone)
+	# a method, not a lambda: a lambda that never touches self stays connected after the scene is gone
 	_origin = origin
 	Events.enemy_spawned.connect(_on_enemy_spawned)
 	Events.laser_fired.connect(func(_hit):
@@ -239,7 +211,7 @@ func _exit_tree() -> void:
 
 # ---------- 10. Space Junk + jokes ----------
 
-## A pop-up word where a monster died. Throttled so a bomb doesn't fill the screen.
+## throttled so a bomb doesn't fill the screen with words
 func _on_enemy_killed_word(enemy: Node) -> void:
 	if not (is_instance_valid(enemy) and enemy is Node2D) or _level == null:
 		return
@@ -263,7 +235,6 @@ func _on_item_used(kind: String, _at: Vector2) -> void:
 			_play(SFX_PICKUP, sfx_volume_db, 1.3)
 			_play(SFX_LEVEL_START, sfx_volume_db, 1.25)
 			_flash_from(Color(1.0, 0.4, 1.0, 0.3), 0.5)
-			# The music speeds up while everyone dances
 			_music.pitch_scale = 1.15
 			get_tree().create_timer(drop_manager.DISCO_TIME, false).timeout.connect(_end_disco_music)
 		"snack":
@@ -281,7 +252,6 @@ func _on_bomb_boom(_at: Vector2) -> void:
 	_flash_from(Color(0.5, 1.0, 0.3, 0.2), 0.35)
 
 
-## Freeze-frame on a hit, and the origin talks back
 func _on_laser_fired_feel(hit: bool) -> void:
 	if hit and hit_stop_time > 0.0:
 		Engine.time_scale = 0.05
@@ -300,7 +270,6 @@ func _end_hit_stop() -> void:
 	Engine.time_scale = 1.0
 
 
-## A speech bubble above the origin for a couple of seconds
 func _say(line: String) -> void:
 	if is_instance_valid(_bubble):
 		_bubble.queue_free()
@@ -328,7 +297,7 @@ func _say(line: String) -> void:
 	panel.reset_size()
 	panel.position = Vector2(-panel.size.x / 2.0, -panel.size.y - 52.0)
 	panel.pivot_offset = Vector2(panel.size.x / 2.0, panel.size.y)
-	if _origin.global_position.y + panel.position.y < 56.0:   # would cover the HUD: say it below instead
+	if _origin.global_position.y + panel.position.y < 56.0:   # would cover the HUD, put it below
 		panel.position.y = 52.0
 		panel.pivot_offset.y = 0.0
 	panel.scale = Vector2(0.2, 0.2)
@@ -340,7 +309,6 @@ func _say(line: String) -> void:
 	tween.tween_callback(panel.queue_free)
 
 
-## The astronaut does a happy spin while the level fades out
 func _on_origin_destroyed_feel() -> void:
 	if is_instance_valid(_bubble):
 		_bubble.queue_free()
@@ -357,7 +325,6 @@ func _on_origin_destroyed_feel() -> void:
 			Color(1.0, 0.9, 0.3), 28, 40.0, 1.4)
 
 
-## The origin bulges each time a monster comes out, and so does the floor mark
 func _on_enemy_spawned(_enemy: Node) -> void:
 	if is_instance_valid(_origin):
 		_origin.pulse()
@@ -365,8 +332,7 @@ func _on_enemy_spawned(_enemy: Node) -> void:
 		marker.pulse()
 
 
-## Level 2 only: a glowing mark where the monster routes start, because the
-## Commander is somewhere else. Routes that start close together share one mark.
+## level 2 only, the Commander walks away from the spawns. Close routes share one mark.
 func _add_spawn_markers(level: Level) -> void:
 	var spots: Array[Vector2] = []
 	for path in level.get_enemy_paths():
@@ -389,24 +355,21 @@ func _add_spawn_markers(level: Level) -> void:
 		_spawn_markers.append(marker)
 
 
-## When the level ends no more monsters come out. On a win the ones still
-## walking dissolve with the origin, so nothing can hurt the player any more.
+## on a win the leftover monsters vanish so nothing can hurt the player any more
 func _on_level_finished(won: bool) -> void:
 	wave_manager.stop()
 	if won:
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			enemy.vanish()
 	else:
-		_flash_to(Color(0.25, 0.0, 0.05, 0.55), 1.2)   # the screen sinks into dark red
+		_flash_to(Color(0.25, 0.0, 0.05, 0.55), 1.2)
 
 
-## Jump to `color`, then fade it away (a flash)
 func _flash_from(color: Color, seconds: float) -> void:
 	_flash.color = color
 	_flash_to(Color(color, 0.0), seconds)
 
 
-## Fade the screen colour from what it is now to `color`. Runs while paused too.
 func _flash_to(color: Color, seconds: float) -> void:
 	if _flash_tween:
 		_flash_tween.kill()
@@ -426,7 +389,7 @@ func _setup_audio(level_number: int) -> void:
 	music.name = "Music"
 	music.stream = MUSIC.get(level_number, MUSIC[1])
 	music.volume_db = music_volume_db
-	music.process_mode = Node.PROCESS_MODE_ALWAYS   # keep playing while the game is paused for aiming
+	music.process_mode = Node.PROCESS_MODE_ALWAYS   # keep playing while paused for aiming
 	add_child(music)
 	music.play()
 	_music = music
@@ -436,7 +399,7 @@ func _setup_audio(level_number: int) -> void:
 	Events.laser_picked_up.connect(func():
 		_play(SFX_PICKUP)
 		_play(SFX_LASER_CHARGE)
-		_fade_music(music_volume_db + aim_music_duck_db, 0.3))   # quieter while aiming
+		_fade_music(music_volume_db + aim_music_duck_db, 0.3))
 	Events.laser_fired.connect(func(hit: bool):
 		_play(SFX_LASER_FIRE)
 		_fade_music(music_volume_db, 0.6)
@@ -462,7 +425,6 @@ func _on_player_hp_changed(hp: int, _max_hp: int) -> void:
 	_last_hp = hp
 
 
-## One tick per second while the last TICK_LAST_SECONDS seconds run down
 func _on_time_changed(seconds_left: float) -> void:
 	var second := ceili(seconds_left)
 	if second == _last_tick_second:
@@ -472,8 +434,7 @@ func _on_time_changed(seconds_left: float) -> void:
 		_play(SFX_TIMER_TICK)
 
 
-## Plays one sound effect. Each call gets its own player, so sounds can overlap,
-## and it runs while paused because the laser sounds happen during aim mode.
+## own player per call so sounds overlap. Runs while paused since laser sounds play in aim mode.
 func _play(stream: AudioStream, volume_db := sfx_volume_db, pitch := 1.0) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = stream

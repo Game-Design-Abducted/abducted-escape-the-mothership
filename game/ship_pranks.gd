@@ -1,16 +1,5 @@
 extends Node
-## Ship pranks. Ploy's.
-##
-## Every 40 s or so the mothership's loudspeaker plays a prank on you for a few
-## seconds. Keeps the minutes between lasers from feeling the same.
-##   LIGHTS OUT         everything goes dark except a circle around you
-##   FLOOR WAX DAY      you slide around instead of stopping
-##   BALLOON PARTY      monsters puff up: bigger (easier to shoot) and slower
-##   CONTROLS REVERSED  left is right (level 2 only, and shorter)
-##
-## A banner warns you WARNING_TIME before it starts and shows a bar while it
-## lasts. This node pauses with the game, so aiming the laser doesn't count.
-## game.gd calls setup(level, player).
+## Ship pranks: short silly twists every ~40 s. Ploy's. Pauses with the game so laser aiming doesn't count.
 
 const PRANKS := {
 	"lights": {"title": "LIGHTS OUT", "joke": "someone sat on the light switch", "time": 8.0},
@@ -104,7 +93,6 @@ func _begin() -> void:
 	_set_effect(active, true)
 
 
-## End the prank now (also when the level ends)
 func stop() -> void:
 	_warning = 0.0
 	if active != "":

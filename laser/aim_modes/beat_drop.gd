@@ -1,10 +1,5 @@
 extends "res://laser/aim_mode.gd"
-## Laser mode BEAT DROP. Ploy's.
-##
-## The beam locks onto the target by itself. Three rings shrink onto the
-## target, one per beat. Press fire when a ring lands on the target: 2 of 3
-## on the beat and the laser fires. Pressing way off the beat costs you that
-## beat, so mashing doesn't work. The window gets wider with `assist`.
+## Laser mode: hit 2 of 3 beats as the rings land on the target. Ploy's.
 
 func mode_name() -> String:
 	return "BEAT DROP"
@@ -17,9 +12,9 @@ const BEATS := 3
 const NEED := 2
 const FIRST_BEAT := 1.3                 ## seconds after the shot starts
 const INTERVAL := {1: 0.85, 2: 0.7}     ## seconds between beats
-const WINDOW := {1: 0.14, 2: 0.12}      ## +- seconds that count as on the beat, before assist
-const PENALTY_RANGE := 0.35             ## a press this close to a beat but outside the window loses it
-const RING_LEAD := 0.8                  ## a ring starts shrinking this long before its beat
+const WINDOW := {1: 0.14, 2: 0.12}      ## +- seconds on the beat, before assist
+const PENALTY_RANGE := 0.35             ## near-miss presses lose the beat so mashing doesn't work
+const RING_LEAD := 0.8                  ## seconds a ring shrinks before its beat
 const FONT := preload("res://assets/fonts/VT323.ttf")
 const SFX_TICK := preload("res://assets/audio/sfx/timer_tick.wav")
 const SFX_GOOD := preload("res://assets/audio/sfx/ui_click.wav")
@@ -45,7 +40,7 @@ func window() -> float:
 	return WINDOW.get(level_number, 0.13) * minf(assist, 1.7)
 
 
-## Seconds to the nearest beat not judged yet (negative = it's already past). Bot uses it.
+## seconds to the next unjudged beat (negative = past). used by the bot.
 func to_next_beat() -> float:
 	for i in BEATS:
 		if _judged[i] == "":
@@ -85,7 +80,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_sound(SFX_GOOD, 1.2 + 0.2 * _good)
 		elif off <= PENALTY_RANGE:
 			_judged[i] = "MISS"
-		break   # only the next waiting beat counts
+		break
 	_check_done()
 
 
@@ -117,7 +112,6 @@ func _draw() -> void:
 		return
 	var at := to_local(target.global_position)
 	var r := target_radius()
-	# Shrinking rings, one per beat
 	if not _fired:
 		for i in BEATS:
 			var until := beat_time(i) - _t
@@ -126,7 +120,6 @@ func _draw() -> void:
 				var on_beat := absf(until) <= window()
 				var color := Color(0.3, 1.0, 0.5) if on_beat else Color(1.0, 0.4, 1.0, 0.9)
 				draw_arc(at, r + k * 150.0, 0.0, TAU, 48, color, 4.0 if on_beat else 3.0)
-	# One light per beat under the target
 	for i in BEATS:
 		var p := at + Vector2((i - 1) * 34.0, r + 26.0)
 		var c := Color(0.25, 0.2, 0.35)
@@ -136,7 +129,6 @@ func _draw() -> void:
 			c = Color(1.0, 0.3, 0.3)
 		draw_circle(p, 10.0, c)
 		draw_arc(p, 10.0, 0.0, TAU, 20, Color(1, 1, 1, 0.7), 2.0)
-	# Latest verdict above the target
 	for i in range(BEATS - 1, -1, -1):
 		if _judged[i] != "":
 			var good: bool = _judged[i] == "NICE!"

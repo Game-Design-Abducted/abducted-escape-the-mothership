@@ -1,11 +1,5 @@
 extends "res://laser/aim_mode.gd"
-## Laser mode POWER SHOT. Ploy's.
-##
-## The beam locks onto the target by itself. HOLD fire to charge the power
-## bar, LET GO while it's in the green zone.
-##   let go too early  -> "TOO WEAK"     the beam fizzles out short (miss)
-##   hold too long     -> "OVERCHARGED!" it fires by itself, wobbly (miss)
-## The green zone gets wider with `assist` (after misses).
+## Laser mode: hold to charge, let go in the green. Ploy's.
 
 func mode_name() -> String:
 	return "POWER SHOT"
@@ -38,13 +32,13 @@ func _process(delta: float) -> void:
 	if not _fired:
 		_armed_in -= delta
 		if is_instance_valid(target):
-			_angle = (target.global_position - from_position).angle()   # locked on
+			_angle = (target.global_position - from_position).angle()
 		if _charging:
 			var before := power
 			power += delta / FILL_TIME.get(level_number, 1.2)
 			var z := zone()
 			if before < z.x and power >= z.x:
-				_sound(SFX_TICK, 1.6)   # entering the green
+				_sound(SFX_TICK, 1.6)
 			if power >= 1.0:
 				power = 1.0
 				_overcharge()
@@ -80,7 +74,7 @@ func _overcharge() -> void:
 	_fire(Vector2.from_angle(_angle + deg_to_rad(28.0 * (1 if randf() < 0.5 else -1))), 0)
 
 
-## Bot: hold, then let go in the middle of the green
+## bot: let go in the middle of the green
 func bot_should_release(err_sec: float) -> bool:
 	return power >= ZONE_CENTER + err_sec / FILL_TIME.get(level_number, 1.2)
 
@@ -93,12 +87,10 @@ func _draw() -> void:
 		return
 	_draw_target_ring(1.0 if _charging else 0.6)
 	var dir := Vector2.from_angle(_angle)
-	# Locked line, shaking more as the power rises
 	_wobble += 0.6
 	var shake := Vector2(0, sin(_wobble) * 3.0 * power).rotated(_angle)
 	var color := Color(1.0, 0.2, 0.2, 0.55).lerp(Color(1.0, 0.95, 0.3, 0.95), power)
 	draw_line(start, start + dir * LINE_LENGTH + shake * 20.0, color, 2.0 + 4.0 * power)
-	# Power bar next to the player
 	var bar := Rect2(start + Vector2(28, -BAR_SIZE.y * 0.5), BAR_SIZE)
 	draw_rect(bar.grow(3), Color(0.05, 0.0, 0.12, 0.9))
 	var z := zone()
@@ -108,6 +100,10 @@ func _draw() -> void:
 	var in_zone := power >= z.x and power <= z.y
 	var fill_color := Color(0.3, 1.0, 0.4) if in_zone else (Color(1.0, 0.3, 0.2) if power > z.y else Color(1.0, 0.85, 0.3))
 	draw_rect(Rect2(bar.position.x, bar.end.y - fill, BAR_SIZE.x, fill), fill_color)
+	# edges stick out of the bar so they stay visible under the fill
+	for edge in [z.x, z.y]:
+		var y: float = bar.end.y - BAR_SIZE.y * edge
+		draw_line(Vector2(bar.position.x - 7, y), Vector2(bar.end.x + 7, y), Color.WHITE, 2.0)
 	draw_rect(bar.grow(3), Color(1.0, 0.82, 0.0), false, 2.0)
 	if not _charging and _armed_in <= 0.0:
 		var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 150.0)

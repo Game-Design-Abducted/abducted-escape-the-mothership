@@ -1,30 +1,5 @@
 extends SceneTree
-## =====================================================================
-## PLAY-TEST BOT: a simple scripted player plays whole levels for you.
-## For Ploy (testing). Use it to check balance after changing waves,
-## monsters or a level. It is NOT run in CI (it takes minutes and its
-## result depends on luck).
-## =====================================================================
-##   godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4
-##
-## Options (all after the lone `--`):
-##   --level=1|2    which level to play            (default 1)
-##   --runs=N       how many times                 (default 4)
-##   --speed=X      game speed, 1 = real time      (default 3)
-##   --out=FOLDER   also write results_L<level>.json and an end-of-run
-##                  screenshot per run into FOLDER  (default: print only)
-## Add --headless before --path to run without a window (no screenshots).
-##
-## The bot walks to the nearest monster, shoots when it is lined up, steps
-## back when one gets too close, runs to the laser when it appears and fires
-## with a human-sized timing error. It also grabs Space Junk drops that land
-## within ITEM_GRAB_RANGE, like a player would. It is a mediocre player on purpose: if it
-## wins every run in 20 seconds the level is too easy, if it never wins the
-## level is probably too hard. It cannot judge how the game FEELS.
-##
-## One line is printed per run: result, time, kills, hits taken, each laser
-## (when it appeared, when it was picked up, hit or miss) and `stuck` (how
-## often the bot could not move for 2 s: a hint that a corridor is blocked).
+## Play-test bot for balance checks, not in CI. godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4 --speed=3 --out=FOLDER
 
 var out_dir := ""
 var level_number := 1
@@ -202,7 +177,7 @@ func _clear_line(a: Vector2, b: Vector2) -> bool:
 	return true
 
 
-## First step of the shortest tile route from `from` to `to`. (-1,-1) = no route.
+## first step of the shortest tile route, (-1,-1) = no route
 func _next_cell(from: Vector2i, to: Vector2i) -> Vector2i:
 	if from == to:
 		return from
@@ -290,7 +265,7 @@ func _aim_tick() -> void:
 			_laser_key(true)
 			fire_release = true
 		return
-	# SWEEP and TRICK SHOT: fire when the line reaches an angle that hits
+	# SWEEP and TRICK SHOT
 	var lead := deg_to_rad(aim.current_speed()) * aim_err
 	for want: float in aim.bot_want_angles():
 		var remaining := wrapf(want - aim._angle, -PI, PI)   # the sweep adds to the angle
@@ -354,14 +329,12 @@ func _tick() -> void:
 		elif absf(to.x) < 14.0 and absf(to.y) > 1.0:
 			axis = Vector2(0, signf(to.y))
 		if axis != Vector2.ZERO and _clear_line(pos, nearest.global_position):
-			# lined up: face it and shoot, close in only if it is far away
 			if player.facing.dot(axis) < 0.9 or best > 160.0:
 				_move(axis)
 			else:
 				_move(Vector2.ZERO)
 				moving = false
 		elif best < 56.0:
-			# too close and not lined up: step away along the freest axis
 			var away := -to.normalized()
 			var cands := [Vector2(signf(away.x), 0), Vector2(0, signf(away.y))]
 			if absf(away.y) > absf(away.x):

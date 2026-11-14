@@ -1,21 +1,6 @@
 extends Node
-## Wave manager. Ploy's.
-##
-## game.gd (Kong) creates this and calls
-##     wave_manager.setup(level.get_enemy_paths(), GameState.current_level)
-## After that it keeps spawning monsters on Mew's paths, wave after wave.
-## When the wave list runs out it repeats the last wave, a bit faster each loop.
-##
-## It uses a Timer node, so spawning stops by itself when the game is paused
-## (laser aim mode).
-##
-## TODO Ploy:
-##  - basic spawning (done, works)
-##  - design real waves for level 1 in WAVES[1] (done)
-##  - maybe pick a path per enemy type (e.g. tanks only on Path_A)
-##  - level 2 waves in WAVES[2] (done: denser, more fast monsters)
-##  - Events.wave_started(n) is emitted for every wave, so Kong's HUD can show "Wave 3" (done)
-##  - quiet start (`start_delay`) and a cap on monsters alive (`max_alive`) (done)
+## Wave manager, game.gd calls setup(). Ploy's.
+# uses a Timer node so spawning pauses by itself during laser aim mode
 
 const ENEMY_SCENES := {
 	"basic": preload("res://enemies/enemy_basic.tscn"),
@@ -23,14 +8,13 @@ const ENEMY_SCENES := {
 	"tank": preload("res://enemies/enemy_tank.tscn"),
 }
 
-## Each wave: which monster, how many, seconds between spawns.
-## "pause" = seconds of quiet before the NEXT wave starts.
+## "interval" = seconds between spawns, "pause" = quiet before the next wave
 const WAVES := {
 	1: [
-		{"type": "basic", "count": 4, "interval": 2.0, "pause": 5.0},    # learn to shoot
+		{"type": "basic", "count": 4, "interval": 2.0, "pause": 5.0},
 		{"type": "basic", "count": 6, "interval": 1.5, "pause": 5.0},
-		{"type": "fast", "count": 4, "interval": 1.6, "pause": 6.0},     # fast ones show up
-		{"type": "tank", "count": 2, "interval": 3.0, "pause": 7.0},     # first tanks
+		{"type": "fast", "count": 4, "interval": 1.6, "pause": 6.0},
+		{"type": "tank", "count": 2, "interval": 3.0, "pause": 7.0},
 		{"type": "mixed", "count": 10, "interval": 1.4, "pause": 6.0},
 		{"type": "fast", "count": 8, "interval": 1.0, "pause": 6.0},
 		{"type": "mixed", "count": 14, "interval": 1.0, "pause": 5.0},
@@ -41,20 +25,19 @@ const WAVES := {
 		{"type": "tank", "count": 4, "interval": 1.8, "pause": 3.0},
 		{"type": "fast", "count": 10, "interval": 0.6, "pause": 3.0},
 		{"type": "mixed", "count": 14, "interval": 0.8, "pause": 3.0},
-		{"type": "tank", "count": 5, "interval": 1.4, "pause": 2.0},     # tanks first
-		{"type": "fast", "count": 12, "interval": 0.5, "pause": 3.0},    # then fast ones
+		{"type": "tank", "count": 5, "interval": 1.4, "pause": 2.0},
+		{"type": "fast", "count": 12, "interval": 0.5, "pause": 3.0},
 		{"type": "mixed", "count": 18, "interval": 0.6, "pause": 3.0},
 	],
 }
 
-## Every time the wave list loops, intervals are multiplied by this
+## interval multiplier each time the wave list loops
 @export var loop_speedup := 0.85
-## ...but never below this, or the last minute floods the map with monsters
+## floor for the loop speedup so late game doesn't flood
 @export var min_speed_factor := 0.4
-## Seconds of quiet at the start of a level, so the player can look around first
+## seconds of quiet at level start
 @export var start_delay := 2.0
-## Never more than this many monsters alive at once. Spawning waits while the map
-## is full, so a player who stops shooting gets a crowd, not hundreds of monsters.
+## spawning waits while this many monsters are alive
 @export var max_alive := 40
 
 var _paths: Array[Path2D] = []
@@ -65,8 +48,7 @@ var _speed_factor := 1.0
 var _timer: Timer
 
 
-## Most monsters alive at once, per level (overrides max_alive). Playtests showed
-## up to 28 on level 2, which buried real players.
+## per level cap, overrides max_alive. 28 on level 2 buried playtesters.
 const MAX_ALIVE := {1: 12, 2: 16}
 
 
@@ -84,7 +66,7 @@ func setup(paths: Array[Path2D], level_number: int) -> void:
 	_start_next_wave()
 
 
-## No more monsters. game.gd calls this when the level is won or lost.
+## game.gd calls this when the level is won or lost
 func stop() -> void:
 	if _timer:
 		_timer.stop()
@@ -106,7 +88,7 @@ func _on_timer() -> void:
 		_start_next_wave()
 		return
 	if get_tree().get_nodes_in_group("enemies").size() >= max_alive:
-		_timer.start(0.5)   # map is full: try again soon, the wave is not used up
+		_timer.start(0.5)
 		return
 	spawn_enemy(wave["type"])
 	_left_in_wave -= 1
@@ -121,6 +103,6 @@ func spawn_enemy(type: String) -> Node:
 		type = ENEMY_SCENES.keys().pick_random()
 	var enemy: Node = ENEMY_SCENES[type].instantiate()
 	var path: Path2D = _paths.pick_random()
-	path.add_child(enemy)   # enemy is a PathFollow2D, so it must live under a Path2D
+	path.add_child(enemy)   # PathFollow2D must be a child of a Path2D
 	Events.enemy_spawned.emit(enemy)
 	return enemy

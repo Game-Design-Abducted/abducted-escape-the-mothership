@@ -1,13 +1,7 @@
 class_name PauseMenu
 extends CanvasLayer
-## Pause menu. Ploy's. game.gd adds one to every level.
-##
-## ESC or P (the "pause" action) opens it: RESUME, RESTART LEVEL, QUIT TO MENU,
-## plus the controls card. Works during aiming too: it remembers that the game
-## was already paused for the laser and goes back to that on resume.
-##
-## Anything that keeps running while the tree is paused (the aim line, the
-## Commander) checks PauseMenu.open and stands still while the menu is up.
+## Pause menu (ESC / P). Ploy's. game.gd adds one to every level.
+## things that run while paused (aim line, Commander) check PauseMenu.open and stand still.
 
 static var open := false
 
@@ -94,7 +88,6 @@ func _build() -> void:
 	_sfx = AudioStreamPlayer.new()
 	add_child(_sfx)
 
-	# Small reminder in the corner while playing
 	var hint := Label.new()
 	hint.text = "ESC  pause"
 	hint.add_theme_font_override("font", BODY_FONT)

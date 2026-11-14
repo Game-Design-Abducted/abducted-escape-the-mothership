@@ -1,29 +1,8 @@
 extends Node
-## GameState (autoload). Kong's: win/lose and switching between levels.
-##
-## Keeps the stuff that has to survive a scene change: current level, the
-## 3 minute countdown, and which story page comes next.
-##
-## Flow:
-##   title_screen -> story("intro") -> game (level 1)
-##     win  -> story("level2") -> game (level 2)
-##     win  -> story("ending") -> end_screen (won)
-##     lose -> end_screen (lost) -> retry same level or back to menu
-##
-## The timer only ticks while `running` is true. This node uses the default
-## process mode, so the clock also stops when the tree is paused (laser aim).
-## If you want it to keep going while aiming, set
-## process_mode = PROCESS_MODE_ALWAYS in _ready() and check
-## get_tree().paused yourself in _process().
-##
-## TODO Kong:
-##  - a short "YOU WIN / TIME UP" moment before the scene changes (right now
-##    it's just a 1.5 s delay)
-##  - decide if the timer should pause while aiming (it does at the moment)
-##  - decide if retry restarts level 1 or the level you died on (right now
-##    it's the same level)
+## GameState (autoload). Kong's: win/lose, level switching, the countdown.
+## default process mode on purpose, so the clock stops while the tree is paused (laser aim).
 
-const LEVEL_TIME := 180.0   # 3 minutes, from the design doc
+const LEVEL_TIME := 180.0
 const LAST_LEVEL := 2
 
 const SCENES := {
@@ -74,8 +53,7 @@ func begin_level() -> void:
 	Events.time_changed.emit(time_left)
 
 
-## Pause menu RESTART / QUIT: stop the clock without a win or a loss, so the
-## timer can't run out (and jump to the lose screen) after leaving the level
+## Pause menu RESTART / QUIT: stop the clock so it can't run out after we've left the level
 func stop_level() -> void:
 	running = false
 
@@ -93,7 +71,7 @@ func finish_level(won: bool, time_up := false) -> void:
 	last_result_won = won
 	last_result_time_up = time_up
 	Events.level_finished.emit(won)
-	# Short delay so players can see what happened. Runs even while the game is paused.
+	# short delay so players see what happened. runs while paused too
 	get_tree().create_timer(1.5, true).timeout.connect(_after_level.bind(won))
 
 

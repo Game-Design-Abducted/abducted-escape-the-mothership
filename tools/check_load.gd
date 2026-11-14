@@ -1,12 +1,5 @@
 extends SceneTree
-## =====================================================================
-## LOAD CHECK: loads every .gd and .tscn in the project (about 1 second).
-## CI runs this on every PR. Run it yourself before you push:
-## =====================================================================
-##   godot --headless --path . -s tools/check_load.gd
-##
-## Catches: a script that does not compile, a scene that points at a
-## file that was moved or deleted. Exit code 0 = everything loads.
+## Load check for every .gd and .tscn, CI runs it: godot --headless --path . -s tools/check_load.gd
 
 const SKIP_DIRS := [".godot", ".git", ".claude", "art_source"]
 const MUSIC_DIR := "res://assets/audio/music"

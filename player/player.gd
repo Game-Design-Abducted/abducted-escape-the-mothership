@@ -1,27 +1,7 @@
 class_name Player
 extends CharacterBody2D
 ## Player. Yang's.
-##
-## Already working (starter code):
-##  - 8-direction movement with WASD/arrows, blocked by walls (layer 1)
-##  - `attack` (Space/J) shoots a bullet where you're facing
-##  - take_damage(): HP goes down, short invincibility, Events.player_died at 0
-##
-## Other people's code relies on these, so please don't rename them:
-##  - root is in group "player", collision layer 2 (player), mask 1 (walls)
-##  - func take_damage(amount: int), Ploy's enemies call it on contact
-##  - emits Events.player_hp_changed(hp, max_hp) and Events.player_died
-##  - laser_pickup.gd detects this body, and aim_mode.gd reads global_position (both are yours too now)
-##
-## TODO Yang:
-##  - decide how movement should feel: free 8-dir (what we have) or
-##    Pac-Man grid movement (4-dir, snaps to the 32px corridors, buffered
-##    turns). See _get_move_dir().
-##  - attack cooldown / ammo? damage numbers? tune bullet speed
-##  - hit flash + death effect (done: hit sprite, blink, spin and fade on death)
-##  - check the laser pickup (laser_pickup.gd) works with your player (it should already,
-##    it detects you through layer 2)
-##  - bug fixing
+## others rely on: group "player", layer 2 / mask 1, take_damage(amount). don't rename.
 
 @export var speed := 180.0
 @export var max_hp := 4
@@ -75,7 +55,6 @@ func _physics_process(delta: float) -> void:
 
 
 func _get_move_dir() -> Vector2:
-	# Free movement. Replace this for Pac-Man style grid movement if you want it.
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 
@@ -103,10 +82,9 @@ func take_damage(amount: int) -> void:
 	if hp <= 0:
 		die()
 		return
-	# Short invincibility so one monster can't hit you every frame
+	# so one monster can't hit you every frame
 	_invincible = true
 	sprite.texture = hit_texture
-	# Hit sprite for a moment, then blink until the invincibility runs out
 	var blinks := maxi(int((invincible_time - HIT_FLASH_TIME) / (BLINK_TIME * 2.0)), 1)
 	var tween := create_tween()
 	tween.tween_callback(func(): sprite.texture = normal_texture).set_delay(HIT_FLASH_TIME)
@@ -119,7 +97,7 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	sprite.texture = dead_texture
 	Events.player_died.emit()
-	# GameState waits 1.5 s before the end screen, so this plays in that time
+	# GameState waits 1.5 s before the end screen, this plays in that gap
 	var tween := create_tween()
 	tween.tween_property(sprite, "scale", Vector2(1.4, 1.4), 0.12)
 	tween.tween_callback(_death_fade)

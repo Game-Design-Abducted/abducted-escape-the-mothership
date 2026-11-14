@@ -1,13 +1,7 @@
 extends "res://laser/aim_mode.gd"
-## Laser mode TRICK SHOT. Ploy's.
-##
-## Sweeps like the normal laser, but the beam BOUNCES once off the outer wall of
-## the ship, and only the bounced part counts ("the target's shield is facing
-## you, hit it from behind"). The aim line shows the bounce, so it is a
-## different read of the same timing skill. Lock-on slow-down works on the
-## bounced part.
+## Laser mode: sweep, but only the part bounced off the outer wall counts. Ploy's.
 
-const ARENA := Rect2(32, 32, 1216, 656)   ## inside of the outer wall (levels are 1280x720, 32 px tiles)
+const ARENA := Rect2(32, 32, 1216, 656)   ## inside of the outer wall (1280x720 levels, 32 px tiles)
 const FONT := preload("res://assets/fonts/VT323.ttf")
 
 var _verdict := ""
@@ -21,7 +15,7 @@ func how_to() -> String:
 	return "Only BOUNCED beams count! Bank it off the outer wall"
 
 
-## Where a beam from `from` at `angle` meets the outer wall: [point, wall normal]
+## returns [point, wall normal]
 func _bounce(from: Vector2, angle: float) -> Array:
 	var d := Vector2.from_angle(angle)
 	var best := INF
@@ -53,7 +47,6 @@ func _reflect(d: Vector2, n: Vector2) -> Vector2:
 	return d - 2.0 * d.dot(n) * n
 
 
-## Does the bounced part of a beam fired at `angle` hit the target?
 func bounce_hits(angle: float) -> bool:
 	if not is_instance_valid(target):
 		return false
@@ -67,7 +60,7 @@ func bounce_hits(angle: float) -> bool:
 	return (point + out * along).distance_to(target.global_position) <= target_radius(point)
 
 
-## Angles whose bounce lands right on the target (mirror the target in each wall)
+## mirror the target in each wall
 func bot_want_angles() -> Array:
 	var result := []
 	if not is_instance_valid(target):
@@ -81,7 +74,7 @@ func bot_want_angles() -> Array:
 	}
 	for n: Vector2 in mirrors:
 		var a: float = (mirrors[n] - from_position).angle()
-		if _bounce(from_position, a)[1] == n:   # the beam really reaches that wall first
+		if _bounce(from_position, a)[1] == n:   # beam has to reach that wall first
 			result.append(a)
 	return result
 
@@ -119,7 +112,6 @@ func _draw() -> void:
 		return
 	var close := closeness()
 	_draw_target_ring(close)
-	# First leg dim (it doesn't count), the bounce bright
 	draw_line(start, point, Color(1.0, 0.3, 0.3, 0.35), 2.0)
 	var color := Color(1.0, 0.2, 0.2, 0.85).lerp(Color(1.0, 0.9, 0.2, 1.0), close)
 	draw_line(point, point + out * LINE_LENGTH, color, 3.0 + 2.0 * close)

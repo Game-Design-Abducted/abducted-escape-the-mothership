@@ -1,63 +1,32 @@
 extends Node
-## Laser manager, the special mechanic. Yang's.
-##
-## How it loops:
-##   1. the laser CHARGES from kills: the player has to kill a quota of each
-##      monster type (FIRST_QUOTAS, Events.enemy_killed) -> Events.laser_charge_changed
-##      (so hiding in a corner never gets you a laser). Kills over a type's
-##      quota don't count. Per-type progress goes out as Events.laser_quota_changed
-##   2. spawn laser_pickup at a random LaserSpawns marker -> Events.laser_spawned
-##   3. player touches it -> PAUSE the game, start aim mode -> Events.laser_picked_up
-##   4. the aim line sweeps, player presses fire -> UNPAUSE -> Events.laser_fired(hit)
-##        hit  -> origin.take_laser_hit(); after HITS_NEEDED hits -> Events.origin_destroyed
-##                -> GameState: win. Before that, charge again (RETRY_QUOTAS) -> back to step 2
-##        miss -> charge again (RETRY_QUOTAS) -> back to step 2
-##
-## game.gd calls setup(level, player, origin).
-##
-## TODO Yang:
-##  - charge + spawn + pickup (done, works)
-##  - freeze, sweep-aim, shoot, hit/miss, retry (basic version works)
-##  - sound when the charge completes / on fire
-##  - should walls block the laser? Right now it goes through them
-##  - tune the kill quotas, hits needed and sweep speed per level with playtesting
+## Laser manager: kill quotas charge it, grab the pickup, aim, shoot the origin. Yang's.
+# TODO: should walls block the laser? right now it goes through them
 
 @export var sweep_speed_level_1 := 100.0   ## aim line speed, degrees per second
 @export var sweep_speed_level_2 := 130.0
 
-## Kills of each monster type needed before the first laser appears, per level
-## Keep each number below what the level's early waves actually spawn: kills
-## over a type's quota don't count, so a type that rarely shows up stalls the
-## whole charge. Level 2 only sends basics inside "mixed" waves (a random
-## pick of the 3 types), about 1 in 6 of its monsters.
+## kills per type for the first laser. keep below what early waves spawn or the charge stalls
 const FIRST_QUOTAS := {
 	1: {"basic": 10, "fast": 7, "tank": 3},
 	2: {"basic": 2, "fast": 6, "tank": 2},
 }
-## Kills needed after a hit that didn't finish the origin, or after a miss, per level
+## kills needed to recharge after a miss or a non-final hit
 const RETRY_QUOTAS := {
 	1: {"basic": 3, "fast": 2, "tank": 1},
 	2: {"basic": 1, "fast": 3, "tank": 1},
 }
-## Laser hits the origin takes before it is destroyed, per level (overrides
-## laser_hits_needed in Ploy's origin.gd)
+## overrides laser_hits_needed in origin.gd
 const HITS_NEEDED := {1: 2, 2: 3}
 
-## PITY LASER: every miss in a row makes the next shot easier (bigger hit zone,
-## slower sweep) until you hit. Resets on a hit. Keeps the multi-hit fights
-## winnable for real players without making a first-try hit free.
-const PITY_RADIUS_PER_MISS := 0.3    # +30 % hit radius per miss
-const PITY_RADIUS_MAX := 2.0         # never more than double
-const PITY_SPEED_PER_MISS := 0.85    # sweep x0.85 per miss
+## pity laser: each miss in a row makes the next shot easier, resets on hit
+const PITY_RADIUS_PER_MISS := 0.3
+const PITY_RADIUS_MAX := 2.0
+const PITY_SPEED_PER_MISS := 0.85
 const PITY_SPEED_MIN := 0.5
-## Long shots: the hit zone grows this many px per px of distance, so a target
-## 900 px away is as hard to hit as one 300 px away would be without it
+## px of extra hit radius per px of distance, so long shots aren't way harder
 const HIT_RADIUS_PER_DISTANCE := 0.06
 
-## LASER MODES: every shot is a different little game, so the third laser of a
-## level doesn't feel like the first. The first shot of level 1 is always SWEEP
-## (it teaches the idea), level 2 opens with TRICK SHOT, then each shot picks a
-## random mode from the level's pool, never the same one twice in a row.
+## first shot of level 1 is sweep since it teaches the idea
 const MODES := {
 	"sweep": preload("res://laser/aim_mode.gd"),
 	"power": preload("res://laser/aim_modes/power_shot.gd"),
@@ -69,7 +38,7 @@ const MODE_POOL := {
 	1: ["sweep", "power", "beat"],
 	2: ["sweep", "power", "beat", "trick"],
 }
-## Trick shot bounces, so the far end of the line moves faster: sweep a bit slower
+## trick shot bounces so the far end moves faster
 const TRICK_SPEED_FACTOR := 0.75
 
 const PICKUP_SCENE := preload("res://laser/laser_pickup.tscn")
@@ -78,14 +47,14 @@ var _level: Level
 var _player: Node2D
 var _origin: Origin
 var _base_hit_radius := 48.0
-var _misses := 0          ## misses since the last hit (pity laser)
-var _kills := 0          ## counted kills over all types (what the HUD total shows)
+var _misses := 0
+var _kills := 0
 var _needed := 0
-var _quota := {}         ## monster type -> kills needed for the current charge
-var _counts := {}        ## monster type -> kills counted so far
-var _charging := false   ## true while counting kills toward the next pickup
+var _quota := {}         ## type -> kills needed
+var _counts := {}        ## type -> kills so far
+var _charging := false
 var _last_mode := ""
-## For tests: force the next shot's mode ("" = pick normally)
+## for tests: force the next shot's mode ("" = pick normally)
 var next_mode := ""
 
 
@@ -118,7 +87,7 @@ func _on_enemy_killed(enemy: Node) -> void:
 		return
 	var type := _enemy_type(enemy)
 	if not _quota.has(type) or _counts[type] >= _quota[type]:
-		return   # this type's quota is already full, the kill doesn't count
+		return
 	_counts[type] += 1
 	_emit_charge()
 	for t in _quota:
@@ -128,7 +97,7 @@ func _on_enemy_killed(enemy: Node) -> void:
 	_spawn_pickup()
 
 
-## Enemies have no type field, so it comes from which scene they were made from
+## enemies have no type field, so go by the scene path
 func _enemy_type(enemy: Node) -> String:
 	var path := enemy.scene_file_path
 	if "fast" in path:
@@ -149,7 +118,7 @@ func _emit_charge() -> void:
 	_kills = kills
 	_needed = needed
 	Events.laser_charge_changed.emit(kills, needed)
-	# Deferred so the HUD exists when the first one goes out
+	# deferred so the HUD exists for the first one
 	Events.laser_quota_changed.emit.call_deferred(progress)
 
 
@@ -161,8 +130,7 @@ func _spawn_pickup() -> void:
 	var pickup = PICKUP_SCENE.instantiate()
 	pickup.position = spots.pick_random()
 	pickup.picked_up.connect(_on_picked_up)
-	# Deferred: the last kill comes from a bullet collision, and adding an
-	# Area2D inside a physics callback prints "flushing queries"
+	# deferred: adding an Area2D in a physics callback errors with "flushing queries"
 	_add_pickup.call_deferred(pickup)
 
 
@@ -172,7 +140,7 @@ func _add_pickup(pickup: Node2D) -> void:
 
 
 func _on_picked_up() -> void:
-	# Deferred: changing pause state inside a physics callback is unsafe
+	# deferred: don't change pause state inside a physics callback
 	_start_aim.call_deferred()
 
 
@@ -192,7 +160,7 @@ func _start_aim() -> void:
 	aim.target = _origin
 	aim.hit_radius = _origin.hit_radius
 	aim.radius_per_distance = HIT_RADIUS_PER_DISTANCE
-	# Start pointing AWAY from the origin, so the player gets time to read the sweep
+	# start pointing away from the origin so the player has time to read the sweep
 	var away := _player.global_position - _origin.global_position
 	aim.start_angle = away.angle() if away != Vector2.ZERO else 0.0
 	aim.fired.connect(_on_fired.bind(aim))
@@ -217,9 +185,9 @@ func _pick_mode() -> String:
 func _on_fired(direction: Vector2, aim: Node) -> void:
 	var hit := false
 	if aim.result >= 0:
-		hit = aim.result == 1   # the mode decided (timing modes, trick shot)
+		hit = aim.result == 1   # the mode decided
 	elif _origin != null:
-		# Same zone the aim ring shows: pity radius + a bonus for distance
+		# same zone the aim ring shows
 		var pity_radius := _origin.hit_radius
 		_origin.hit_radius = pity_radius + HIT_RADIUS_PER_DISTANCE * _player.global_position.distance_to(_origin.global_position)
 		hit = _origin.is_hit_by_ray(_player.global_position, direction)
@@ -231,7 +199,7 @@ func _on_fired(direction: Vector2, aim: Node) -> void:
 	Events.laser_fired.emit(hit)
 	if hit:
 		_origin.take_laser_hit()
-		if not _origin.destroyed:   # needs more hits
+		if not _origin.destroyed:
 			_start_charging(_retry_quota())
 	else:
 		_start_charging(_retry_quota())

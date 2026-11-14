@@ -1,13 +1,5 @@
 extends Node2D
-## Glowing mark on the floor where monsters come out. Ploy's.
-##
-## Level 1 does not need it (the egg sits on that spot). In Level 2 the
-## Commander walks around, so without a mark the monsters would appear out of
-## thin air in the middle of a corridor. game.gd adds one per spawn spot and
-## calls pulse() when a monster comes out.
-##
-## Drawn in code (two rings and a soft disc), so it needs no art. If Fah draws
-## a hatch or a portal, put a Sprite2D here instead and keep pulse().
+## Glowing floor mark where monsters spawn in level 2. Ploy's. game.gd calls pulse().
 
 @export var color := Color(0.5, 1.0, 0.55)
 @export var radius := 22.0
@@ -31,4 +23,4 @@ func _draw() -> void:
 	var r := radius + 3.0 * breathe + 12.0 * _kick
 	draw_circle(Vector2.ZERO, r, Color(color, 0.10 + 0.06 * breathe + 0.15 * _kick))
 	draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, Color(color, 0.55), 2.0)
-	draw_arc(Vector2.ZERO, r * 0.55, _t, _t + TAU * 0.75, 24, Color(color, 0.35), 2.0)   # inner ring slowly turns
+	draw_arc(Vector2.ZERO, r * 0.55, _t, _t + TAU * 0.75, 24, Color(color, 0.35), 2.0)
