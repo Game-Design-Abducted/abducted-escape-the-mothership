@@ -7,8 +7,8 @@ extends Control
 ##   - title music loops
 ## Enter / Space also press START.
 ##
-## Sounds and fonts are loaded only if the files exist, so this scene still runs
-## if assets/audio or assets/fonts are missing.
+## Sounds are loaded only if the files exist, so this scene still runs if
+## assets/audio is missing. (The fonts are also set in the .tscn, so those must exist.)
 
 const TITLE_FONT := "res://assets/fonts/Minecraft.ttf"
 const BODY_FONT := "res://assets/fonts/VT323.ttf"
@@ -28,6 +28,7 @@ var _t := 0.0
 var _ufo_y := 0.0
 var _astro_y := 0.0
 var _starting := false
+var _hover_tween: Tween
 
 
 func _ready() -> void:
@@ -39,6 +40,7 @@ func _ready() -> void:
 	start_button.grab_focus() # before connecting, so no hover sound on load
 	start_button.pressed.connect(_on_start)
 	start_button.mouse_entered.connect(_on_hover.bind(true))
+	start_button.mouse_entered.connect(_play.bind(SFX_HOVER)) # mouse only: focus would play it again
 	start_button.mouse_exited.connect(_on_hover.bind(false))
 	start_button.focus_entered.connect(_on_hover.bind(true))
 	start_button.focus_exited.connect(_on_hover.bind(false))
@@ -67,10 +69,10 @@ func _twinkle_stars() -> void:
 
 func _on_hover(on: bool) -> void:
 	start_button.pivot_offset = start_button.size / 2.0
-	var tw := create_tween()
-	tw.tween_property(start_button, "scale", Vector2(1.08, 1.08) if on else Vector2.ONE, 0.1)
-	if on:
-		_play(SFX_HOVER)
+	if _hover_tween:
+		_hover_tween.kill()
+	_hover_tween = create_tween()
+	_hover_tween.tween_property(start_button, "scale", Vector2(1.08, 1.08) if on else Vector2.ONE, 0.1)
 
 
 func _on_start() -> void:
@@ -107,9 +109,7 @@ func _apply_fonts() -> void:
 func _setup_audio() -> void:
 	var stream = _load_if_exists(MUSIC)
 	if stream:
-		if stream is AudioStreamOggVorbis:
-			stream.loop = true
-		music.stream = stream
+		music.stream = stream # loops via its .import file
 		music.play()
 
 

@@ -31,7 +31,9 @@ var _change_in := 0.0
 
 
 func _ready() -> void:
+	super()
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	breathe_speed = 6.0     # reads as a quick walk instead of slow breathing
 	_velocity = move_speed
 	_change_in = maxf(randf_range(change_min, change_max), 0.1)   # 0 would mean jitter
 
@@ -41,6 +43,7 @@ func follow_path(path: Path2D) -> void:
 
 
 func _process(delta: float) -> void:
+	_animate(delta)
 	if _path == null or destroyed:
 		return
 	var length := _path.curve.get_baked_length()

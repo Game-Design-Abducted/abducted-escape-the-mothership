@@ -83,6 +83,25 @@ func _fire(aim: Node, direction: Vector2) -> void:
 	await process_frame
 
 
+## Which way to shoot at `target` from `distance` px away without a maze wall in
+## between. Where the monster is by now depends on timing, so a fixed side can put
+## the shooter behind a wall. Falls back to RIGHT if all four sides are blocked.
+func _clear_shot_direction(target: Node2D, distance: float) -> Vector2:
+	var space := target.get_world_2d().direct_space_state
+	for dir: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP]:
+		var side := Vector2(-dir.y, dir.x) * 8.0   # a bullet is 10 px wide
+		var blocked := false
+		for offset: Vector2 in [Vector2.ZERO, side, -side]:
+			var from := target.global_position - dir * (distance + 16.0) + offset
+			var query := PhysicsRayQueryParameters2D.create(from, target.global_position + offset, 1)   # layer 1 = walls
+			query.hit_from_inside = true
+			if not space.intersect_ray(query).is_empty():
+				blocked = true
+		if not blocked:
+			return dir
+	return Vector2.RIGHT
+
+
 ## Runs an enemy's movement by hand, frame by frame, so the checks don't depend on real time
 func _step(enemy: Node, seconds: float) -> void:
 	for i in int(round(seconds * 60.0)):
@@ -144,6 +163,27 @@ func _enemy_type_checks() -> void:
 				"max %.1f px, amplitude %.1f" % [off_max, amp])
 		_check("fast monster still moves forward at its speed", absf(fast.progress - fast.speed * 4.0) < 2.0,
 				"progress %.0f" % fast.progress)
+
+	# Hatching: a monster that just came out can't be hurt and can't hurt yet
+	var hatchling: Node = _spawn_on_test_path("res://enemies/enemy_basic.tscn", path)
+	var protection = hatchling.get("spawn_protection")
+	if protection == null or protection <= 0.0:
+		_check("monsters have a spawn_protection setting", false)
+	else:
+		var blocked := [0]
+		var count_blocked := func(_enemy): blocked[0] += 1
+		_events.enemy_blocked.connect(count_blocked)
+		hatchling.take_damage(1)
+		_check("a hatching monster cannot be hurt", not hatchling._dead and hatchling.hp == hatchling.max_hp and blocked[0] == 1,
+				"hp %d, blocked signals %d" % [hatchling.hp, blocked[0]])
+		_check("a hatching monster starts small", hatchling.get_node("Sprite2D").scale.x < 0.6,
+				"scale %.2f" % hatchling.get_node("Sprite2D").scale.x)
+		_step(hatchling, protection + 0.1)
+		_check("it is full size once it has hatched", absf(hatchling.get_node("Sprite2D").scale.x - 1.0) < 0.1,
+				"scale %.2f" % hatchling.get_node("Sprite2D").scale.x)
+		hatchling.take_damage(1)
+		_check("once hatched, one bullet kills a basic monster", hatchling._dead)
+		_events.enemy_blocked.disconnect(count_blocked)
 
 	# Tank: stops at the corner for corner_pause seconds, then carries on
 	var tank: Node2D = _spawn_on_test_path("res://enemies/enemy_tank.tscn", path)
@@ -281,6 +321,12 @@ func _level_2_checks() -> void:
 	_check("repeating waves stop getting faster at min_speed_factor",
 			floor_factor != null and floor_factor >= 0.3 and manager._speed_factor >= floor_factor - 0.001,
 			"factor %.3f, floor %s" % [manager._speed_factor, str(floor_factor)])
+	# ...and the map has a cap, so a player who stops shooting does not get hundreds of monsters
+	manager.max_alive = 5
+	for i in 30:
+		manager._on_timer()
+	var alive := get_nodes_in_group("enemies").size()
+	_check("spawning waits while max_alive monsters are on the map", alive == 5, "%d alive, cap 5" % alive)
 	manager.queue_free()
 	flood_path.queue_free()
 
@@ -309,6 +355,28 @@ func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
 	return false
 
 
+## File name of the picture on the end screen ("" if there is none)
+func _end_art() -> String:
+	var art := current_scene.get_node_or_null("VBox/Art") as TextureRect
+	return art.texture.resource_path.get_file() if art and art.texture else ""
+
+
+## "lose.wav playing" style description of the end screen's sound ("" if there is none)
+func _end_sound() -> String:
+	var jingle := current_scene.get_node_or_null("Jingle") as AudioStreamPlayer
+	if jingle == null or jingle.stream == null:
+		return ""
+	return "%s %s" % [jingle.stream.resource_path.get_file(), "playing" if jingle.playing else "silent"]
+
+
+## Which track game.gd is playing, e.g. "bgm_level.ogg playing"
+func _music_of(game: Node) -> String:
+	var music := game.get_node_or_null("Music") as AudioStreamPlayer
+	if music == null or music.stream == null:
+		return "no Music node"
+	return "%s %s" % [music.stream.resource_path.get_file(), "playing" if music.playing else "silent"]
+
+
 func _press_any_key() -> void:
 	for pressed in [true, false]:
 		var ev := InputEventKey.new()
@@ -335,6 +403,10 @@ func _level_problems(scene_path: String, needs_origin_path: bool) -> Array:
 		for path in level.get_node("Paths").get_children():
 			if path is Path2D and path.curve != null and path.curve.point_count >= 2:
 				routes += 1
+				# Monsters are children of the path, so a path hidden in the editor
+				# (eye icon) makes its monsters invisible while they still hurt.
+				if not path.visible:
+					problems.append("Paths/%s is hidden, so its monsters are invisible" % path.name)
 			else:
 				problems.append("Paths/%s has no route drawn" % path.name)
 		if routes == 0:
@@ -378,6 +450,12 @@ func _run() -> void:
 	# ---------- Level 1 ----------
 	var game: Node = await _load_game(1)
 	_check("level 1 loads and the clock starts", game.name == "Game" and _state.running)
+	_check("level 1 plays the level music", _music_of(game) == "bgm_level.ogg playing", _music_of(game))
+	# game.gd adds one AudioStreamPlayer per sound effect, so listen for those
+	var heard := {}
+	game.child_entered_tree.connect(func(node: Node):
+		if node is AudioStreamPlayer and node.stream != null:
+			heard[node.stream.resource_path.get_file().get_basename()] = true)
 	var player: Node2D = get_first_node_in_group("player")
 	player.global_position = Vector2(300, 300)   # off every monster path while we wait
 	await create_timer(3.0).timeout
@@ -400,8 +478,10 @@ func _run() -> void:
 	var target: Node2D = get_nodes_in_group("enemies")[-1]
 	var kills_before: int = lm._kills
 	target.speed = 0.0
-	player.global_position = target.global_position - Vector2(70, 0)
-	player.facing = Vector2.RIGHT
+	target._protected_for = 0.0   # it may have only just hatched; hatching monsters can't be hurt
+	var shot_dir := _clear_shot_direction(target, 70.0)
+	player.global_position = target.global_position - shot_dir * 70.0
+	player.facing = shot_dir
 	player.shoot()
 	await create_timer(0.3).timeout
 	_check("bullet kills a monster", not is_instance_valid(target) or target._dead)
@@ -426,6 +506,12 @@ func _run() -> void:
 	to_origin = (origin.global_position - player.global_position).normalized()
 	await _fire(aim, to_origin)
 	_check("hit: origin destroyed and level won", origin.destroyed and _state.last_result_won and not _state.running)
+	var silent := []
+	for sound in ["player_hurt", "shoot", "enemy_die", "laser_spawn", "pickup", "laser_charge",
+			"laser_fire", "laser_miss", "origin_destroyed"]:
+		if not heard.has(sound):
+			silent.append(sound)
+	_check("level 1 played every sound it should have", silent.is_empty(), "missing: %s" % [silent])
 	await create_timer(2.0).timeout
 	_check("win leads to the Level 2 story page", current_scene.name == "StoryScreen" and _state.current_level == 2,
 			"%s, level %d" % [current_scene.name, _state.current_level])
@@ -440,6 +526,7 @@ func _run() -> void:
 	before = origin.global_position
 	await create_timer(0.5).timeout
 	_check("Commander keeps moving while the game is paused (aiming)", before.distance_to(origin.global_position) > 10.0)
+	_check("level 2 plays the boss music, also while paused", _music_of(game) == "bgm_boss.ogg playing", _music_of(game))
 	paused = false
 
 	# Timeout loses
@@ -452,6 +539,8 @@ func _run() -> void:
 	# Lose screen: RETRY restarts the level you lost on
 	var retry: Button = current_scene.get_node("VBox/RetryButton")
 	_check("lose screen shows RETRY", retry.visible)
+	_check("lose screen shows the hurt astronaut", _end_art() == "Player_Hit.png", _end_art())
+	_check("lose screen plays the lose sound", _end_sound() == "lose.wav playing", _end_sound())
 	retry.pressed.emit()
 	var ok: bool = await _wait_for_scene("Game")
 	await process_frame
@@ -477,10 +566,20 @@ func _run() -> void:
 	_check("ending story leads to the win screen", ok and _state.last_result_won, current_scene.name)
 	await process_frame
 	_check("win screen has no RETRY", ok and not current_scene.get_node("VBox/RetryButton").visible)
+	_check("win screen shows the spaceship", _end_art() == "Spaceship.png", _end_art())
+	_check("win screen plays the win sound", _end_sound() == "win.wav playing", _end_sound())
 	if ok:
 		current_scene.get_node("VBox/MenuButton").pressed.emit()
 	ok = await _wait_for_scene("TitleScreen")
 	_check("MAIN MENU leads to the title screen", ok, current_scene.name)
+
+	# Title: the hover sound is for the mouse only (the button holds keyboard focus from the start)
+	if ok:
+		var hover_sfx: AudioStreamPlayer = current_scene.get_node("Sfx")
+		current_scene.get_node("StartButton").focus_entered.emit()
+		_check("title: keyboard focus does not play the hover sound", hover_sfx.stream == null)
+		current_scene.get_node("StartButton").mouse_entered.emit()
+		_check("title: mouse hover plays the hover sound", hover_sfx.stream != null)
 
 	# Title: START begins a new game at level 1
 	if ok:
