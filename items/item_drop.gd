@@ -1,15 +1,6 @@
 class_name ItemDrop
 extends Area2D
-## Space Junk: a funny item a monster drops when it dies. Ploy's (idea: Yang,
-## art: placeholder pixel art drawn in code below until Fah draws real icons).
-##
-##   "bomb"  Whoopee Bomb   step on it -> PFFFT -> every monster nearby pops
-##   "disco" Disco Ball     every monster stops and dances (and can't hurt you)
-##   "snack" Space Burrito  +1 heart
-##
-## drop_manager.gd spawns it and does the effect. This node only bobs, glows,
-## blinks before it disappears, and emits Events.item_used when touched.
-## Layer 5 (pickups), mask 2 (player), like the laser pickup.
+## Space Junk item on the floor. Ploy's. layer 5, mask 2. drop_manager.gd does the effect.
 
 const LIFETIME := 8.0        # seconds on the floor before it disappears
 const BLINK_FROM := 2.5      # starts blinking this many seconds before that
@@ -43,7 +34,6 @@ func _ready() -> void:
 	add_child(_sprite)
 	z_index = 5
 	body_entered.connect(_on_body_entered)
-	# Pop out of the dead monster
 	scale = Vector2(0.2, 0.2)
 	create_tween().tween_property(self, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 

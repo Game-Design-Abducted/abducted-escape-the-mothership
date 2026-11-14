@@ -1,12 +1,6 @@
 class_name ControlsCard
 extends PanelContainer
-## On-screen guide cards. Ploy's. Used by the title screen and the pause menu.
-##
-##   add_child(ControlsCard.controls())     keys: move, shoot, laser, pause
-##   add_child(ControlsCard.how_to_win())   the 3 steps + the Space Junk items
-##
-## Built in code so both screens show exactly the same thing, and a change to
-## the controls only has to be made here.
+## On-screen guide cards for the title screen and pause menu, so both show the same thing. Ploy's.
 
 const TITLE_FONT := preload("res://assets/fonts/Minecraft.ttf")
 const BODY_FONT := preload("res://assets/fonts/VT323.ttf")

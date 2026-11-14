@@ -1,14 +1,6 @@
 extends Control
-## Title / home screen. Fah's. This is the game's main scene.
-##
-## Built from the layered art in assets/home/ so the pieces can move:
-##   - stars twinkle, light beam pulses, UFO bobs, astronaut floats in the beam
-##   - START button: hover grow + sound, click sound, fade out
-##   - title music loops
-## Enter / Space also press START.
-##
-## Sounds are loaded only if the files exist, so this scene still runs if
-## assets/audio is missing. (The fonts are also set in the .tscn, so those must exist.)
+## Title screen, the game's main scene. Fah's.
+## sounds load only if the files exist, so it still runs without assets/audio.
 
 const TITLE_FONT := "res://assets/fonts/Minecraft.ttf"
 const BODY_FONT := "res://assets/fonts/VT323.ttf"
@@ -45,7 +37,6 @@ func _ready() -> void:
 	start_button.mouse_exited.connect(_on_hover.bind(false))
 	start_button.focus_entered.connect(_on_hover.bind(true))
 	start_button.focus_exited.connect(_on_hover.bind(false))
-	# fade in
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 

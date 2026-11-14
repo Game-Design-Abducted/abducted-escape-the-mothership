@@ -1,12 +1,6 @@
 extends Area2D
-## Laser gun pickup. Yang's.
-##
-## laser_manager.gd spawns it at one of Mew's LaserSpawns markers.
-## Layer 5 (pickups), mask 2 (player). Emits `picked_up` when the player touches it.
-##
-## TODO Yang (Fah can help with the art):
-##  - bobbing / glowing animation so players actually notice it
-##  - maybe make it disappear after N seconds if nobody grabs it?
+## Laser gun pickup, spawned by laser_manager.gd. Yang's.
+## layer 5, mask 2 (player).
 
 signal picked_up
 
@@ -18,7 +12,6 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Simple bob so it stands out. Replace with a real animation later.
 	$Sprite2D.position.y = sin(Time.get_ticks_msec() / 200.0) * 3.0
 
 

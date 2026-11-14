@@ -1,6 +1,5 @@
 extends Node2D
-## Ploy's sandbox: level 1 paths + wave manager, no player, no timer.
-## Change LEVEL to 2 to watch the level 2 waves.
+## Ploy's sandbox: paths + wave manager, no player. Set LEVEL to 2 for level 2 waves.
 
 const LEVEL := 1
 const LEVEL_SCENES := {1: "res://levels/level_1.tscn", 2: "res://levels/level_2.tscn"}

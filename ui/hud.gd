@@ -1,18 +1,6 @@
 extends CanvasLayer
-## HUD. Kong's (logic). Fah supplies the art, font and icons.
-##
-## Only LISTENS to Events, it never touches player/enemy code directly.
-## Process mode is Always (set in hud.tscn) so it keeps updating while paused.
-##
-##   hearts  <- Events.player_hp_changed(hp, max_hp)   (a lost heart pops and shakes)
-##   timer   <- Events.time_changed(seconds_left)       (turns red under 30 s)
-##   laser   <- Events.laser_quota_changed / laser_spawned / laser_picked_up / laser_fired
-##   level   <- Events.level_started(level_number)
-##   wave    <- Events.wave_started(wave_number)
-##   message <- Events.level_finished(won)  ("TIME UP!" when GameState.last_result_time_up)
-##
-## Top-left row (TopLeft): hearts, level, wave. Top-right row (LaserBox): icon + laser
-## status. Both are HBoxContainers, so the pieces stay together when the text changes.
+## HUD. Kong's logic, Fah's art. only listens to Events, never touches player/enemy code.
+## process mode is Always (set in hud.tscn) so it keeps updating while paused.
 
 const HEART := preload("res://assets/sprites/Heart.png")
 const HEART_LOST := preload("res://assets/sprites/HeartDeducted.png")
@@ -49,7 +37,6 @@ func _ready() -> void:
 
 
 func _on_hp_changed(hp: int, max_hp: int) -> void:
-	# Create heart icons only when the count changes, then just swap textures
 	while hearts.get_child_count() < max_hp:
 		var icon := TextureRect.new()
 		icon.custom_minimum_size = Vector2(64, 64)
@@ -60,7 +47,7 @@ func _on_hp_changed(hp: int, max_hp: int) -> void:
 		var heart := hearts.get_child(i) as TextureRect
 		heart.visible = i < max_hp
 		heart.texture = HEART if i < hp else HEART_LOST
-	# Animate only the hearts just lost (not on the first update, when the level starts)
+	# only hearts just lost, not on the first update when the level starts
 	if _previous_hp != -1:
 		for i in range(hp, mini(_previous_hp, hearts.get_child_count())):
 			_animate_lost_heart(hearts.get_child(i) as TextureRect)
@@ -101,7 +88,7 @@ func _on_laser_quota(progress: Dictionary) -> void:
 
 func _on_laser_fired(hit: bool) -> void:
 	message_label.text = "DIRECT HIT!" if hit else "MISSED! Survive for another chance..."
-	# A connected timer, not an await: it is dropped if the HUD is freed first
+	# connected timer, not an await, so it's dropped if the HUD is freed first
 	get_tree().create_timer(1.5).timeout.connect(_clear_message)
 
 

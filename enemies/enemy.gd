@@ -1,51 +1,18 @@
 class_name Enemy
 extends PathFollow2D
-## Enemy base script. Ploy's.
-##
-## Every monster is a PathFollow2D. It has to be a CHILD of one of Mew's
-## Path2D nodes, and it walks along by increasing `progress`.
-## (wave_manager.gd already does this for you.)
-##
-## The 3 monster scenes share this script, only the numbers differ:
-##   enemy_basic.tscn  Monster1  normal speed, 1 HP
-##   enemy_fast.tscn   Monster2  fast, 1 HP
-##   enemy_tank.tscn   Monster3  slow, 3 HP
-## To change stats, click the root node of the scene and edit the Inspector.
-##
-## Other people's code relies on these, so don't break them:
-##  - root is in group "enemies"
-##  - child `Hitbox` (Area2D) on layer 3 (enemies), mask 2 (player)
-##      Yang's bullets find it and call take_damage() on this root
-##      touching the player calls player.take_damage(contact_damage)
-##  - emits Events.enemy_killed(self) when it dies, Events.enemy_hit(self)
-##    when it is hurt but survives (game.gd plays the sounds)
-##
-## How a monster looks alive (all done in code, on the one sprite Fah drew):
-##  - HATCH: it grows out of the origin for `spawn_protection` seconds. While
-##    hatching it can't be hurt and can't hurt, so nobody can farm kills by
-##    standing on the egg, and nobody gets hit by a monster they couldn't see.
-##  - WALK: it bobs as it walks (the art faces the camera, so it never flips).
-##  - HIT: Hit sprite + a quick pop.   DEATH: Dead sprite, floats up and fades.
-##
-## TODO Ploy:
-##  - basic movement along a path (done, works)
-##  - make the 3 types feel different (done: speed, HP, fast zig-zags,
-##    tank stops at corners)
-##  - hit flash + death sprite (done, see above)
-##  - level 2 difficulty (see WAVES[2] in wave_manager.gd)
-##  - talk to the group about what happens at the END of a path.
-##    Right now it loops forever. Could damage the ship instead (tower defense
-##    style), e.g. a new signal Events.core_damaged.
+## Enemy base script, shared by basic/fast/tank (only the inspector numbers differ). Ploy's.
+## must live under a Path2D. root in group "enemies", Hitbox on layer 3 mask 2, bullets call take_damage().
+# TODO: decide what happens at the end of a path, right now it loops forever.
 
 @export var speed := 80.0
 @export var max_hp := 1
 @export var contact_damage := 1
-## Fast monster: sideways wobble in px (0 = off) and wobble cycles per second
+## fast monster: sideways wobble in px (0 = off)
 @export var zigzag_amplitude := 0.0
 @export var zigzag_speed := 3.0
-## Tank: seconds to stop at each corner of the path (0 = never stops)
+## tank: seconds to stop at each path corner (0 = never)
 @export var corner_pause := 0.0
-## Seconds after spawning while it hatches: can't be hurt, can't hurt (0 = off)
+## seconds of hatching after spawn: can't be hurt, can't hurt (0 = off)
 @export var spawn_protection := 0.7
 
 @export_group("Sprites")
@@ -56,21 +23,21 @@ extends PathFollow2D
 const CONTACT_CHECK_INTERVAL := 0.2
 const DEATH_TIME := 0.4
 const HATCH_START_SCALE := 0.35
-const HATCH_TINT := Color(0.7, 1.0, 0.75, 0.7)   # pale green and see-through while hatching
-const BOB_AMOUNT := 0.06       # how much the walk squashes the sprite (0.06 = 6 %)
-const BOB_PER_PIXEL := 0.2     # bob speed follows walking speed, so tanks plod and fast ones scurry
+const HATCH_TINT := Color(0.7, 1.0, 0.75, 0.7)
+const BOB_AMOUNT := 0.06
+const BOB_PER_PIXEL := 0.2     # bob follows walk speed so tanks plod and fast ones scurry
 
 var hp: int
 var _dead := false
 var _contact_tick := CONTACT_CHECK_INTERVAL
 var _zigzag_time := 0.0
 var _pause_left := 0.0
-var _protected_for := 0.0     # seconds of hatching left
+var _protected_for := 0.0
 var _bob := 0.0
-var _pop := 1.0               # extra sprite scale, tweened by the hit pop
-var _dance_left := 0.0        # Disco Ball drop: stands still, wiggles and can't hurt
-var speed_scale := 1.0        # BALLOON PARTY ship prank slows monsters down
-var _corners := PackedFloat32Array()   # filled on first use, see _corner_offsets()
+var _pop := 1.0
+var _dance_left := 0.0
+var speed_scale := 1.0        # set by the BALLOON PARTY ship prank
+var _corners := PackedFloat32Array()
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var hitbox: Area2D = $Hitbox
@@ -101,9 +68,7 @@ func _process(delta: float) -> void:
 		_bob += speed * speed_scale * delta * BOB_PER_PIXEL
 	_apply_zigzag(delta)
 	_update_look()
-	# body_entered only fires at the moment of first touch, so re-check a few
-	# times per second. Otherwise a player who stays on top of a monster (or
-	# touched it while invincible) would never be hurt again.
+	# body_entered only fires once, so recheck or a player standing on a monster never gets hurt again
 	_contact_tick -= delta
 	if _contact_tick <= 0.0:
 		_contact_tick = CONTACT_CHECK_INTERVAL
@@ -111,8 +76,7 @@ func _process(delta: float) -> void:
 			_on_hitbox_body_entered(body)
 
 
-## If we just walked past a corner (interior curve point), snap to it and wait.
-## Handles the loop wrap: progress dropping means we passed the end and restarted.
+## progress going down means we looped past the end
 func _stop_at_corner(before: float) -> void:
 	if corner_pause <= 0.0:
 		return
@@ -127,8 +91,7 @@ func _stop_at_corner(before: float) -> void:
 			return
 
 
-## Distance along the path to each interior point. Measured as the length of the
-## curve up to that point, so a path that crosses itself still gets the right spot.
+## measured as baked length up to each point so self-crossing paths still work
 static func _corner_offsets(curve: Curve2D) -> PackedFloat32Array:
 	var result := PackedFloat32Array()
 	var part := Curve2D.new()
@@ -140,7 +103,6 @@ static func _corner_offsets(curve: Curve2D) -> PackedFloat32Array:
 	return result
 
 
-## Wobble sideways (perpendicular to the path direction) on every leg.
 func _apply_zigzag(delta: float) -> void:
 	if zigzag_amplitude <= 0.0:
 		return
@@ -157,9 +119,7 @@ func _apply_zigzag(delta: float) -> void:
 	v_offset = side.y
 
 
-## True while it is still hatching out of the origin
-## Disco Ball drop: stop walking and dance for `seconds`. A dancing monster
-## can't hurt the player (it's busy), but it can still be shot.
+## Disco Ball drop. dancing monsters can't hurt the player but can still be shot.
 func dance(seconds: float) -> void:
 	if _dead:
 		return
@@ -167,8 +127,7 @@ func dance(seconds: float) -> void:
 	_pause_left = maxf(_pause_left, seconds)
 
 
-## BALLOON PARTY ship prank (game/ship_pranks.gd): puffed up and floaty.
-## Bigger hitbox, so easier to shoot (and to bump into), and slower.
+## BALLOON PARTY ship prank (game/ship_pranks.gd)
 func balloon(on: bool) -> void:
 	if _dead:
 		return
@@ -184,7 +143,6 @@ func is_hatching() -> bool:
 	return _protected_for > 0.0
 
 
-## Sprite size and tint for this frame: hatch grow-in, walk bob, hit pop
 func _update_look() -> void:
 	var grow := 1.0
 	if spawn_protection > 0.0 and _protected_for > 0.0:
@@ -195,7 +153,6 @@ func _update_look() -> void:
 		sprite.modulate = Color.WHITE
 	var squash := sin(_bob) * BOB_AMOUNT
 	if _dance_left > 0.0:
-		# Disco: side-to-side groove, bouncy squash and party colours
 		var t := Time.get_ticks_msec() / 1000.0
 		sprite.rotation = sin(t * 12.0) * 0.35
 		squash = sin(t * 24.0) * 0.12
@@ -204,14 +161,14 @@ func _update_look() -> void:
 	elif sprite.rotation != 0.0:
 		sprite.rotation = 0.0
 	sprite.scale = Vector2(1.0 + squash, 1.0 - squash) * grow * _pop
-	sprite.position.y = -absf(sin(_bob * 0.5)) * 2.0   # tiny hop
+	sprite.position.y = -absf(sin(_bob * 0.5)) * 2.0
 
 
 func take_damage(amount: int) -> void:
 	if _dead:
 		return
 	if is_hatching():
-		Events.enemy_blocked.emit(self)   # the bullet bounces off (tink)
+		Events.enemy_blocked.emit(self)
 		return
 	hp -= amount
 	if hp <= 0:
@@ -227,10 +184,8 @@ func die() -> void:
 	hitbox.set_deferred("monitorable", false)
 	if dead_texture:
 		sprite.texture = dead_texture
-	# Deferred: a kill usually happens inside a bullet's physics callback, and
-	# listeners (the laser manager spawns a pickup) must not add physics bodies there.
+	# deferred: kills happen in a physics callback and listeners spawn pickups
 	Events.enemy_killed.emit.call_deferred(self)
-	# Float up and fade out
 	sprite.modulate = Color.WHITE
 	var tween := create_tween().set_parallel()
 	tween.tween_property(sprite, "position:y", sprite.position.y - 14.0, DEATH_TIME).set_ease(Tween.EASE_OUT)
@@ -238,8 +193,7 @@ func die() -> void:
 	tween.chain().tween_callback(queue_free)
 
 
-## Dissolve without counting as a kill. game.gd calls this on every monster
-## when the origin is destroyed.
+## dissolve without counting as a kill (game.gd, when the origin is destroyed)
 func vanish() -> void:
 	if _dead:
 		return

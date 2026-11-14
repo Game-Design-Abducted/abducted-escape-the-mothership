@@ -1,9 +1,6 @@
 class_name WhoopeeBurst
 extends Node2D
-## The Whoopee Bomb going off. Ploy's.
-##
-## A green cloud swells for `fuse` seconds (the wheeze), then bursts: emits
-## `exploded`, puffs out to `radius` and fades. drop_manager.gd does the damage.
+## Whoopee Bomb cloud: wheezes for `fuse` s, then emits `exploded`. drop_manager.gd does the damage. Ploy's.
 
 signal exploded(position: Vector2)
 

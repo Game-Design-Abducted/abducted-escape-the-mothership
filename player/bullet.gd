@@ -1,9 +1,5 @@
 extends Area2D
-## Bullet, the player's normal weapon. Yang's.
-##
-## Layer 4 (player_attack), mask 1 (walls) + 3 (enemies).
-## When it hits an enemy Hitbox it calls take_damage() on that enemy's scene root.
-## It can NOT hurt the origin (egg/commander), only the laser can.
+## Player bullet. Yang's. layer 4, mask 1 + 3. can't hurt the origin, only the laser can.
 
 @export var speed := 450.0
 @export var damage := 1

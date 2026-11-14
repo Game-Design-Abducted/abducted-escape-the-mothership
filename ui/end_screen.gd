@@ -1,17 +1,6 @@
 extends Control
 ## End screen (win or lose). Ploy's.
-##
-## Reads GameState.last_result_won and last_result_time_up.
-##   won  -> spaceship + "You escaped!" + win sound + Main Menu
-##   lost -> hurt astronaut + "Game Over" (or "Time Up!" when the clock ran out)
-##           + lose sound + Retry (same level) + Main Menu
-##
-## It moves like Fah's title screen: fades in, the title pops, the picture
-## sways (the spaceship flies, the astronaut wobbles), the buttons grow and
-## play her hover / click sounds, and the screen fades out before it leaves.
-##
-## TODO Ploy:
-##  - swap in real win / lose art if Fah draws some (set it on VBox/Art below)
+# TODO: real win / lose art if Fah draws some
 
 const WIN_ART := preload("res://assets/sprites/Spaceship.png")
 const LOSE_ART := preload("res://assets/sprites/Player_Hit.png")
@@ -65,7 +54,7 @@ func _ready() -> void:
 		button.focus_entered.connect(_on_hover.bind(button, true))
 		button.focus_exited.connect(_on_hover.bind(button, false))
 
-	# Fade in, and pop the title once the layout has given it a size
+	# the title pops once the layout has given it a size
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.5)
 	await get_tree().process_frame
@@ -94,7 +83,6 @@ func _play(stream: AudioStream) -> void:
 	_sfx.play()
 
 
-## Click sound and a short fade, then do what the button is for
 func _leave(action: Callable) -> void:
 	if _leaving:
 		return
