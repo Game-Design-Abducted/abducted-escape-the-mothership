@@ -60,7 +60,11 @@ func _find_aim(game: Node) -> Node:
 func _get_to_aim_mode(game: Node, player: Node2D) -> Node:
 	var lm := game.get_node("LaserManager")
 	while lm._charging:
-		_events.enemy_killed.emit(null)
+		for type in lm._quota:   # the charge needs a quota of every monster type
+			var fake := Node.new()
+			fake.scene_file_path = "res://enemies/enemy_%s.tscn" % type
+			_events.enemy_killed.emit(fake)
+			fake.free()
 	await process_frame
 	var pickup := _find_child_named(_level_of(game).get_node("Entities"), "LaserPickup")
 	if pickup == null:
@@ -501,10 +505,13 @@ func _run() -> void:
 	_check("miss: game resumes, origin alive, laser recharging", not paused and not origin.destroyed and lm._charging,
 			"needs %d kills" % lm._needed)
 
-	# Laser: hit wins the level
-	aim = await _get_to_aim_mode(game, player)
-	to_origin = (origin.global_position - player.global_position).normalized()
-	await _fire(aim, to_origin)
+	# Laser: the origin has to take laser_hits_needed hits, the last one wins the level
+	for n in origin.laser_hits_needed:
+		aim = await _get_to_aim_mode(game, player)
+		to_origin = (origin.global_position - player.global_position).normalized()
+		await _fire(aim, to_origin)
+		if n < origin.laser_hits_needed - 1:
+			_check("hit %d: origin survives and the laser recharges" % (n + 1), not origin.destroyed and lm._charging)
 	_check("hit: origin destroyed and level won", origin.destroyed and _state.last_result_won and not _state.running)
 	var silent := []
 	for sound in ["player_hurt", "shoot", "enemy_die", "laser_spawn", "pickup", "laser_charge",
@@ -557,7 +564,9 @@ func _run() -> void:
 
 	# Level 2 win: ending story, then the win screen, then back to the title
 	game = await _load_game(2)
-	get_first_node_in_group("origin").take_laser_hit()
+	var commander: Node = get_first_node_in_group("origin")
+	for i in commander.laser_hits_needed:
+		commander.take_laser_hit()
 	ok = await _wait_for_scene("StoryScreen")
 	_check("level 2 win leads to the ending story", ok and _state.story_id == "ending", _state.story_id)
 	await create_timer(0.8).timeout   # the story page ignores keys for its first 0.6 s
