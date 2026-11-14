@@ -1,9 +1,10 @@
 extends Control
 ## End screen (win or lose). Ploy's.
 ##
-## Reads GameState.last_result_won.
+## Reads GameState.last_result_won and last_result_time_up.
 ##   won  -> spaceship + "You escaped!" + win sound + Main Menu
-##   lost -> hurt astronaut + "Game Over" + lose sound + Retry (same level) + Main Menu
+##   lost -> hurt astronaut + "Game Over" (or "Time Up!" when the clock ran out)
+##           + lose sound + Retry (same level) + Main Menu
 ##
 ## It moves like Fah's title screen: fades in, the title pops, the picture
 ## sways (the spaceship flies, the astronaut wobbles), the buttons grow and
@@ -34,10 +35,18 @@ var _sfx: AudioStreamPlayer
 
 func _ready() -> void:
 	_won = GameState.last_result_won
-	title.text = "YOU ESCAPED!" if _won else "GAME OVER"
+	var time_up := not _won and GameState.last_result_time_up
+	if _won:
+		title.text = "YOU ESCAPED!"
+		$VBox/Subtitle.text = "Welcome home, astronaut."
+	elif time_up:
+		title.text = "TIME UP!"
+		$VBox/Subtitle.text = "Time ran out on level %d." % GameState.current_level
+	else:
+		title.text = "GAME OVER"
+		$VBox/Subtitle.text = "The aliens got you on level %d." % GameState.current_level
 	if not _won:
 		title.add_theme_color_override("font_color", LOSE_TITLE_COLOR)
-	$VBox/Subtitle.text = "Welcome home, astronaut." if _won else "The aliens got you on level %d." % GameState.current_level
 	art.texture = WIN_ART if _won else LOSE_ART
 	$Jingle.stream = WIN_SOUND if _won else LOSE_SOUND
 	$Jingle.play()
