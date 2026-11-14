@@ -37,6 +37,8 @@ var current_level := 1
 var time_left := LEVEL_TIME
 var running := false
 var last_result_won := false
+## True when the last level was lost because the clock ran out (HUD and end screen show "TIME UP!")
+var last_result_time_up := false
 ## Which page story_screen shows: "intro", "level2" or "ending"
 var story_id := "intro"
 
@@ -52,7 +54,7 @@ func _process(delta: float) -> void:
 	time_left = maxf(time_left - delta, 0.0)
 	Events.time_changed.emit(time_left)
 	if time_left <= 0.0:
-		finish_level(false)
+		finish_level(false, true)
 
 
 # ---------- called by UI / game ----------
@@ -78,11 +80,12 @@ func retry_level() -> void:
 
 
 ## Called on win (origin destroyed) or loss (died / time up)
-func finish_level(won: bool) -> void:
+func finish_level(won: bool, time_up := false) -> void:
 	if not running:
 		return   # already finished, ignore duplicates
 	running = false
 	last_result_won = won
+	last_result_time_up = time_up
 	Events.level_finished.emit(won)
 	# Short delay so players can see what happened. Runs even while the game is paused.
 	get_tree().create_timer(1.5, true).timeout.connect(_after_level.bind(won))

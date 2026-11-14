@@ -534,6 +534,8 @@ func _run() -> void:
 	await create_timer(2.2).timeout
 	_check("time up leads to the lose screen", current_scene.name == "EndScreen" and not _state.last_result_won,
 			current_scene.name)
+	_check("time up shows TIME UP!", current_scene.get_node("VBox/Title").text == "TIME UP!",
+			current_scene.get_node("VBox/Title").text)
 
 	# ---------- Screens and the rest of the flow ----------
 	# Lose screen: RETRY restarts the level you lost on
@@ -554,6 +556,8 @@ func _run() -> void:
 	player.take_damage(player.max_hp)
 	ok = await _wait_for_scene("EndScreen")
 	_check("player death leads to the lose screen", ok and not _state.last_result_won, current_scene.name)
+	_check("player death shows GAME OVER, not TIME UP!", ok and current_scene.get_node("VBox/Title").text == "GAME OVER",
+			current_scene.get_node("VBox/Title").text if ok else "")
 
 	# Level 2 win: ending story, then the win screen, then back to the title
 	game = await _load_game(2)
