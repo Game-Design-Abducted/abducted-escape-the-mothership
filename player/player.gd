@@ -18,7 +18,7 @@ extends CharacterBody2D
 ##    Pac-Man grid movement (4-dir, snaps to the 32px corridors, buffered
 ##    turns). See _get_move_dir().
 ##  - attack cooldown / ammo? damage numbers? tune bullet speed
-##  - hit flash (Player_Hit.png) + death sprite (Player_Dead.png)
+##  - hit flash + death effect (done: hit sprite, blink, spin and fade on death)
 ##  - check the laser pickup (laser_pickup.gd) works with your player (it should already,
 ##    it detects you through layer 2)
 ##  - bug fixing
@@ -33,6 +33,9 @@ extends CharacterBody2D
 @export var normal_texture: Texture2D = preload("res://assets/sprites/Player.png")
 @export var hit_texture: Texture2D = preload("res://assets/sprites/Player_Hit.png")
 @export var dead_texture: Texture2D = preload("res://assets/sprites/Player_Dead.png")
+
+const HIT_FLASH_TIME := 0.15   ## how long the hit sprite shows
+const BLINK_TIME := 0.08       ## half a blink while invincible
 
 var hp: int
 var facing := Vector2.RIGHT
@@ -86,16 +89,30 @@ func take_damage(amount: int) -> void:
 	# Short invincibility so one monster can't hit you every frame
 	_invincible = true
 	sprite.texture = hit_texture
-	await get_tree().create_timer(invincible_time, false).timeout
-	if not is_inside_tree():
-		return
-	_invincible = false
-	sprite.texture = normal_texture
+	# Hit sprite for a moment, then blink until the invincibility runs out
+	var blinks := maxi(int((invincible_time - HIT_FLASH_TIME) / (BLINK_TIME * 2.0)), 1)
+	var tween := create_tween()
+	tween.tween_callback(func(): sprite.texture = normal_texture).set_delay(HIT_FLASH_TIME)
+	for i in blinks:
+		tween.tween_property(sprite, "modulate:a", 0.3, BLINK_TIME)
+		tween.tween_property(sprite, "modulate:a", 1.0, BLINK_TIME)
+	tween.finished.connect(func(): _invincible = false)
 
 
 func die() -> void:
 	sprite.texture = dead_texture
 	Events.player_died.emit()
+	# GameState waits 1.5 s before the end screen, so this plays in that time
+	var tween := create_tween()
+	tween.tween_property(sprite, "scale", Vector2(1.4, 1.4), 0.12)
+	tween.tween_callback(_death_fade)
+
+
+func _death_fade() -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(sprite, "scale", Vector2(0.6, 0.6), 0.9)
+	tween.tween_property(sprite, "modulate:a", 0.0, 0.9)
+	tween.tween_property(sprite, "rotation", PI, 0.9)
 
 
 func _emit_hp() -> void:
