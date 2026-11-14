@@ -26,6 +26,7 @@ signal laser_spawned(position: Vector2)          ## HUD: "Laser available!"
 signal laser_picked_up                           ## gameplay freezes and aim mode starts
 signal laser_fired(hit: bool)                    ## hit = origin destroyed, miss = retry later
 signal laser_charge_changed(kills: int, kills_needed: int)   ## laser charges from kills
+signal laser_quota_changed(progress: Dictionary)             ## per monster type: {"basic": [kills, needed], ...}
 
 # ---- Origin (emitted by Ploy's origin.gd) ----
 signal origin_destroyed

@@ -6,7 +6,7 @@ extends CanvasLayer
 ##
 ##   hearts  <- Events.player_hp_changed(hp, max_hp)   (a lost heart pops and shakes)
 ##   timer   <- Events.time_changed(seconds_left)       (turns red under 30 s)
-##   laser   <- Events.laser_charge_changed / laser_spawned / laser_picked_up / laser_fired
+##   laser   <- Events.laser_quota_changed / laser_spawned / laser_picked_up / laser_fired
 ##   level   <- Events.level_started(level_number)
 ##   wave    <- Events.wave_started(wave_number)
 ##   message <- Events.level_finished(won)  ("TIME UP!" when GameState.last_result_time_up)
@@ -37,7 +37,7 @@ func _ready() -> void:
 	wave_label.text = "WAVE 1"
 	Events.player_hp_changed.connect(_on_hp_changed)
 	Events.time_changed.connect(_on_time_changed)
-	Events.laser_charge_changed.connect(_on_laser_charge)
+	Events.laser_quota_changed.connect(_on_laser_quota)
 	Events.laser_spawned.connect(func(_pos): laser_label.text = "LASER READY! Grab it!")
 	Events.laser_picked_up.connect(func(): message_label.text = "PRESS SPACE WHEN THE BEAM CROSSES THE TARGET")
 	Events.laser_fired.connect(_on_laser_fired)
@@ -90,8 +90,11 @@ func _on_time_changed(seconds_left: float) -> void:
 			time_label.remove_theme_color_override("font_color")
 
 
-func _on_laser_charge(kills: int, kills_needed: int) -> void:
-	laser_label.text = "Laser charge: %d / %d kills" % [kills, kills_needed]
+func _on_laser_quota(progress: Dictionary) -> void:
+	var parts: Array[String] = []
+	for type in progress:
+		parts.append("%s %d/%d" % [type.capitalize(), progress[type][0], progress[type][1]])
+	laser_label.text = "Laser charge\n" + "  ".join(parts)
 
 
 func _on_laser_fired(hit: bool) -> void:
