@@ -492,6 +492,63 @@ func _run() -> void:
 	_check("kill charges the laser", lm._kills == kills_before + 1, "%d / %d" % [lm._kills, lm._needed])
 	player.global_position = Vector2(300, 300)
 
+	# Space Junk drops: each one dropped right under the player, so stepping on it is instant
+	var dm := game.get_node("DropManager")
+	# Burrito: +1 HP
+	player.hp = player.max_hp - 1
+	dm.drop("snack", player.global_position)
+	for i in 6:
+		await physics_frame
+	_check("Space Burrito heals 1 HP", player.hp == player.max_hp, "hp %d/%d" % [player.hp, player.max_hp])
+	# Disco Ball: every monster dances, stays put and can't hurt
+	var dancers := get_nodes_in_group("enemies").filter(func(e): return not e._dead)
+	dm.drop("disco", player.global_position)
+	for i in 6:
+		await physics_frame
+	var all_dance := dancers.size() > 0
+	for e in dancers:
+		all_dance = all_dance and (not is_instance_valid(e) or e.is_dancing())
+	_check("Disco Ball makes every monster dance", all_dance, "%d monsters" % dancers.size())
+	if dancers.size() > 0 and is_instance_valid(dancers[0]):
+		var dancer: Node2D = dancers[0]
+		var before_progress: float = dancer.progress
+		var hp_before: int = player.hp
+		player._invincible = false
+		for i in 30:   # 0.5 s standing right on it
+			if is_instance_valid(dancer):
+				player.global_position = dancer.global_position
+			await physics_frame
+		_check("a dancing monster stands still and doesn't hurt", is_instance_valid(dancer) and dancer.progress == before_progress and player.hp == hp_before,
+				"moved %.1f px, hp %d -> %d" % [dancer.progress - before_progress if is_instance_valid(dancer) else -1.0, hp_before, player.hp])
+	player.global_position = Vector2(300, 300)
+	await create_timer(dm.DISCO_TIME).timeout
+	# Whoopee Bomb: monsters in range pop, and the kill counts like any other
+	var victim: Node2D = null
+	for e in get_nodes_in_group("enemies"):
+		if not e._dead:
+			victim = e
+			break
+	if victim == null:
+		_check("Whoopee Bomb pops monsters nearby", false, "no monster alive to test on")
+	else:
+		victim.speed = 0.0
+		victim._protected_for = 0.0
+		victim._pause_left = 0.0
+		var bomb_at: Vector2 = victim.global_position + Vector2(dm.BOMB_RADIUS * 0.5, 0)
+		player.global_position = bomb_at
+		var killed := [0]
+		var count_kill := func(_e): killed[0] += 1
+		_events.enemy_killed.connect(count_kill)
+		dm.drop("bomb", bomb_at)
+		await create_timer(dm.BOMB_FUSE + 0.4).timeout
+		_events.enemy_killed.disconnect(count_kill)
+		_check("Whoopee Bomb pops monsters nearby", not is_instance_valid(victim) or victim._dead, "%d killed" % killed[0])
+		_check("bomb kills count as kills (laser charge)", killed[0] >= 1, "%d" % killed[0])
+	_check("Space Junk never stacks past MAX_ON_MAP", dm._count_on_map() <= dm.MAX_ON_MAP, "%d" % dm._count_on_map())
+	player.hp = player.max_hp
+	player.global_position = Vector2(300, 300)
+	await create_timer(1.1).timeout
+
 	# Laser: pickup pauses, miss resumes and needs a recharge
 	var origin: Node2D = get_first_node_in_group("origin")
 	var aim: Node = await _get_to_aim_mode(game, player)

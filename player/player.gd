@@ -78,6 +78,14 @@ func shoot() -> void:
 	get_parent().add_child(bullet)
 
 
+## Space Snack drop: +amount HP, never above max_hp
+func heal(amount: int) -> void:
+	if hp <= 0:
+		return
+	hp = mini(hp + amount, max_hp)
+	_emit_hp()
+
+
 func take_damage(amount: int) -> void:
 	if _invincible or hp <= 0:
 		return

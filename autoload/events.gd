@@ -35,3 +35,7 @@ signal origin_destroyed
 signal time_changed(seconds_left: float)         ## HUD timer listens
 signal level_started(level_number: int)
 signal level_finished(won: bool)
+
+# ---- Space junk drops (emitted by items/drop_manager.gd and item_drop.gd) ----
+signal item_dropped(kind: String, position: Vector2)   ## "bomb" | "disco" | "snack" appeared on the floor
+signal item_used(kind: String, position: Vector2)      ## the player walked over it

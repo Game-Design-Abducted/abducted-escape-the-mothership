@@ -68,6 +68,7 @@ var _pause_left := 0.0
 var _protected_for := 0.0     # seconds of hatching left
 var _bob := 0.0
 var _pop := 1.0               # extra sprite scale, tweened by the hit pop
+var _dance_left := 0.0        # Disco Ball drop: stands still, wiggles and can't hurt
 var _corners := PackedFloat32Array()   # filled on first use, see _corner_offsets()
 
 @onready var sprite: Sprite2D = $Sprite2D
@@ -89,6 +90,7 @@ func _process(delta: float) -> void:
 	if _dead:
 		return
 	_protected_for = maxf(_protected_for - delta, 0.0)
+	_dance_left = maxf(_dance_left - delta, 0.0)
 	if _pause_left > 0.0:
 		_pause_left -= delta
 	else:
@@ -155,6 +157,19 @@ func _apply_zigzag(delta: float) -> void:
 
 
 ## True while it is still hatching out of the origin
+## Disco Ball drop: stop walking and dance for `seconds`. A dancing monster
+## can't hurt the player (it's busy), but it can still be shot.
+func dance(seconds: float) -> void:
+	if _dead:
+		return
+	_dance_left = maxf(_dance_left, seconds)
+	_pause_left = maxf(_pause_left, seconds)
+
+
+func is_dancing() -> bool:
+	return _dance_left > 0.0
+
+
 func is_hatching() -> bool:
 	return _protected_for > 0.0
 
@@ -169,6 +184,15 @@ func _update_look() -> void:
 	elif sprite.modulate != Color.WHITE:
 		sprite.modulate = Color.WHITE
 	var squash := sin(_bob) * BOB_AMOUNT
+	if _dance_left > 0.0:
+		# Disco: side-to-side groove, bouncy squash and party colours
+		var t := Time.get_ticks_msec() / 1000.0
+		sprite.rotation = sin(t * 12.0) * 0.35
+		squash = sin(t * 24.0) * 0.12
+		if not is_hatching():
+			sprite.modulate = Color.from_hsv(fmod(t * 1.5 + progress * 0.01, 1.0), 0.45, 1.0)
+	elif sprite.rotation != 0.0:
+		sprite.rotation = 0.0
 	sprite.scale = Vector2(1.0 + squash, 1.0 - squash) * grow * _pop
 	sprite.position.y = -absf(sin(_bob * 0.5)) * 2.0   # tiny hop
 
@@ -233,5 +257,5 @@ func _flash_hit() -> void:
 
 
 func _on_hitbox_body_entered(body: Node) -> void:
-	if not _dead and not is_hatching() and body.is_in_group("player"):
+	if not _dead and not is_hatching() and not is_dancing() and body.is_in_group("player"):
 		body.take_damage(contact_damage)

@@ -17,7 +17,8 @@ extends SceneTree
 ##
 ## The bot walks to the nearest monster, shoots when it is lined up, steps
 ## back when one gets too close, runs to the laser when it appears and fires
-## with a human-sized timing error. It is a mediocre player on purpose: if it
+## with a human-sized timing error. It also grabs Space Junk drops that land
+## within ITEM_GRAB_RANGE, like a player would. It is a mediocre player on purpose: if it
 ## wins every run in 20 seconds the level is too easy, if it never wins the
 ## level is probably too hard. It cannot judge how the game FEELS.
 ##
@@ -40,6 +41,8 @@ var player: Node2D
 var origin: Node2D
 var active := false
 var pickup_pos = null
+const ITEM_GRAB_RANGE := 260.0
+var ITEM_SCRIPT: Script
 var aim_err := 0.0
 var aim_seen: Node = null
 var fire_release := false
@@ -76,6 +79,7 @@ func _now() -> float:
 func _run() -> void:
 	st = root.get_node("GameState")
 	ev = root.get_node("Events")
+	ITEM_SCRIPT = load("res://items/item_drop.gd")
 	await process_frame
 	ev.enemy_killed.connect(_on_kill)
 	ev.player_hp_changed.connect(_on_hp)
@@ -83,6 +87,7 @@ func _run() -> void:
 	ev.laser_picked_up.connect(_on_laser_picked)
 	ev.laser_fired.connect(_on_laser_fired)
 	ev.level_finished.connect(_on_finished)
+	ev.item_used.connect(func(kind, _at): if active: run.items.append(kind))
 	physics_frame.connect(_tick)
 	for i in run_count:
 		seed(level_number * 1000 + i * 37 + 5)
@@ -99,7 +104,7 @@ func _run() -> void:
 		last_pos = player.global_position
 		pickup_pos = null
 		aim_seen = null
-		run = {"level": level_number, "run": i, "kill_times": [], "damage": [], "laser": [], "stuck": [], "max_enemies": 0, "unreachable_spots": []}
+		run = {"level": level_number, "run": i, "kill_times": [], "damage": [], "laser": [], "stuck": [], "max_enemies": 0, "unreachable_spots": [], "items": []}
 		for spot in level.get_laser_spawn_points():
 			if _next_cell(walls.local_to_map(player.global_position), walls.local_to_map(spot)) == Vector2i(-1, -1):
 				run.unreachable_spots.append([spot.x, spot.y])
@@ -114,7 +119,7 @@ func _run() -> void:
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("%s/L%d_run%d_end.png" % [out_dir, level_number, i])
 		results.append(run)
-		print("L%d run %d: %s at %.0fs, kills %d, damage %d, lasers %s, stuck %d, max enemies %d" % [level_number, i, run.result, run.t_end, run.kill_times.size(), run.damage.size(), JSON.stringify(run.laser), run.stuck.size(), run.max_enemies])
+		print("L%d run %d: %s at %.0fs, kills %d, damage %d, lasers %s, stuck %d, max enemies %d, items %s" % [level_number, i, run.result, run.t_end, run.kill_times.size(), run.damage.size(), JSON.stringify(run.laser), run.stuck.size(), run.max_enemies, JSON.stringify(run.items)])
 		for k in 600:   # let GameState leave the game scene
 			await process_frame
 			if current_scene != null and current_scene.name != "Game":
@@ -309,9 +314,19 @@ func _tick() -> void:
 			nearest = e
 	run.max_enemies = maxi(run.max_enemies, alive)
 
+	var item: Node2D = null
+	var item_dist := ITEM_GRAB_RANGE
+	for c in level.get_entities().get_children():
+		# (by script path: naming the ItemDrop class here would compile it before the autoloads exist)
+		if c.get_script() == ITEM_SCRIPT and c.global_position.distance_to(pos) < item_dist:
+			item_dist = c.global_position.distance_to(pos)
+			item = c
+
 	var moving := true
 	if pickup_pos != null:
 		_go_to(pickup_pos, dt)
+	elif item != null:
+		_go_to(item.global_position, dt)
 	elif nearest != null:
 		var to := nearest.global_position - pos
 		var axis := Vector2.ZERO
