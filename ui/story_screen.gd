@@ -7,10 +7,17 @@ extends Control
 ##   "ending" -> after level 2 (then the end screen)
 ## Press any key / click to continue.
 ##
-## TODO Yang (ask Fah for the story art):
-##  - story art for each page (Spaceship.png for the ending?)
+## Each page shows Fah's animated art (assets/story/) behind the text.
+##
+## TODO Yang:
 ##  - typewriter text effect, pixel font
 ##  - "loading" screen, could just be a short fade here
+
+const ART := {
+	"intro": "res://assets/story/Story_Intro.tscn",
+	"level2": "res://assets/story/Story_Level2.tscn",
+	"ending": "res://assets/story/Story_Ending.tscn",
+}
 
 const PAGES := {
 	"intro": {
@@ -30,23 +37,31 @@ const PAGES := {
 @onready var title_label: Label = $VBox/Title
 @onready var body_label: Label = $VBox/Body
 
-var _can_continue := false
+const INPUT_DELAY_MSEC := 600   # so a key held from the last screen doesn't skip this one
+
+var _accept_input_at := 0
+var _left := false
 
 
 func _ready() -> void:
 	var page: Dictionary = PAGES.get(GameState.story_id, PAGES["intro"])
 	title_label.text = page["title"]
 	body_label.text = page["text"]
-	# Small delay so a key held from the last screen doesn't skip this one
-	await get_tree().create_timer(0.6).timeout
-	_can_continue = true
+	var art: PackedScene = load(ART.get(GameState.story_id, ART["intro"]))
+	var art_node := art.instantiate()
+	add_child(art_node)
+	move_child(art_node, $Background.get_index() + 1)   # over the plain background, under the text
+	$Background.hide()
+	# A timestamp, not an awaited timer: a pending await kept this screen
+	# (and its art) alive when the scene changed before the timer fired.
+	_accept_input_at = Time.get_ticks_msec() + INPUT_DELAY_MSEC
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _can_continue:
+	if _left or Time.get_ticks_msec() < _accept_input_at:
 		return
 	if (event is InputEventKey or event is InputEventMouseButton) and event.is_pressed():
-		_can_continue = false
+		_left = true
 		if GameState.story_id == "ending":
 			GameState.goto("end")
 		else:

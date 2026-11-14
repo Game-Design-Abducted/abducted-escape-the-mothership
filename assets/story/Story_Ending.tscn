@@ -147,90 +147,6 @@ metadata/motion = "pulse"
 metadata/amp = 0.015
 metadata/speed = 0.8
 
-[node name="Trail1" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 220
-offset_top = 412
-offset_right = 232
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.976, 0.929, 0.196, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = 0.0
-
-[node name="Trail2" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 192
-offset_top = 412
-offset_right = 204
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.976, 0.929, 0.196, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -0.7
-
-[node name="Trail3" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 164
-offset_top = 412
-offset_right = 176
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.976, 0.929, 0.196, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -1.4
-
-[node name="Trail4" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 136
-offset_top = 412
-offset_right = 148
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.969, 0.580, 0.114, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -2.0999999999999996
-
-[node name="Trail5" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 108
-offset_top = 412
-offset_right = 120
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.969, 0.580, 0.114, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -2.8
-
-[node name="Trail6" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 80
-offset_top = 412
-offset_right = 92
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.969, 0.580, 0.114, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -3.5
-
-[node name="Trail7" type="ColorRect" parent="."]
-layout_mode = 0
-offset_left = 52
-offset_top = 412
-offset_right = 64
-offset_bottom = 418
-mouse_filter = 2
-color = Color(0.969, 0.580, 0.114, 1)
-metadata/motion = "blink"
-metadata/speed = 6.0
-metadata/phase = -4.199999999999999
-
 [node name="Spaceship" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 240.0
@@ -244,3 +160,94 @@ expand_mode = 1
 metadata/motion = "bob"
 metadata/amp = 8.0
 metadata/speed = 1.8
+
+[node name="Trail1" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -20.0
+offset_top = 172.0
+offset_right = -8.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = 0.0
+
+[node name="Trail2" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -48.0
+offset_top = 172.0
+offset_right = -36.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -0.7
+
+[node name="Trail3" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -76.0
+offset_top = 172.0
+offset_right = -64.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -1.4
+
+[node name="Trail4" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -104.0
+offset_top = 172.0
+offset_right = -92.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -2.0999999999999996
+
+[node name="Trail5" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -132.0
+offset_top = 172.0
+offset_right = -120.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -2.8
+
+[node name="Trail6" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -160.0
+offset_top = 172.0
+offset_right = -148.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -3.5
+
+[node name="Trail7" type="ColorRect" parent="Spaceship"]
+layout_mode = 0
+offset_left = -188.0
+offset_top = 172.0
+offset_right = -176.0
+offset_bottom = 178.0
+mouse_filter = 2
+show_behind_parent = true
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -4.199999999999999
