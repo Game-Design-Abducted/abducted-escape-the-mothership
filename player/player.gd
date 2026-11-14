@@ -128,8 +128,35 @@ func shoot() -> void:
 	_kick = 1.0
 	var bullet = bullet_scene.instantiate()
 	bullet.direction = facing
-	bullet.global_position = _gun.to_global(MUZZLE - GUN_GRIP)
+	var muzzle := _gun.to_global(MUZZLE - GUN_GRIP)
+	var body := global_position + facing * 20.0
+	# the gun sits off to the side, so near walls fire from the body instead: no shots through walls or eaten by the wall you hug
+	if _gun_in_wall(muzzle) or (not _path_clear(muzzle) and _path_clear(body)):
+		muzzle = body
+	bullet.global_position = muzzle
 	get_parent().add_child(bullet)
+
+
+func _gun_in_wall(muzzle: Vector2) -> bool:
+	var space := get_world_2d().direct_space_state
+	if not space.intersect_ray(PhysicsRayQueryParameters2D.create(global_position, muzzle, 1)).is_empty():
+		return true
+	return not space.intersect_shape(_bullet_query(muzzle, Vector2.ZERO), 1).is_empty()
+
+
+func _path_clear(from: Vector2) -> bool:
+	return get_world_2d().direct_space_state.cast_motion(_bullet_query(from, facing * 40.0))[0] >= 1.0
+
+
+func _bullet_query(at: Vector2, motion: Vector2) -> PhysicsShapeQueryParameters2D:
+	var circle := CircleShape2D.new()
+	circle.radius = 6.0   # bullet radius + a pixel
+	var q := PhysicsShapeQueryParameters2D.new()
+	q.shape = circle
+	q.transform = Transform2D(0.0, at)
+	q.motion = motion
+	q.collision_mask = 1
+	return q
 
 
 ## Space Snack drop: +amount HP, never above max_hp
