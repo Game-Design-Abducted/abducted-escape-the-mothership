@@ -1,0 +1,246 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://assets/story/story_art.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/home/Background.jpg" id="2"]
+[ext_resource type="Texture2D" path="res://assets/story/layers/Stars_Space.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/home/Star.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/story/layers/Glow_Blue.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/story/layers/Earth.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/Spaceship.png" id="7"]
+
+[node name="Story_Ending" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Stars_Space" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 6
+metadata/motion = "twinkle"
+metadata/speed = 0.8
+metadata/low = 0.6
+
+[node name="Star" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 109.0
+offset_top = 109.0
+offset_right = 131.0
+offset_bottom = 131.0
+pivot_offset = Vector2(11.0, 11.0)
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+metadata/motion = "twinkle"
+metadata/speed = 1.0
+metadata/phase = 0.0
+metadata/low = 0.15
+
+[node name="Star_2" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 549.0
+offset_top = 79.0
+offset_right = 571.0
+offset_bottom = 101.0
+pivot_offset = Vector2(11.0, 11.0)
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+metadata/motion = "twinkle"
+metadata/speed = 1.3
+metadata/phase = 1.1
+metadata/low = 0.15
+
+[node name="Star_3" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 1169.0
+offset_top = 589.0
+offset_right = 1191.0
+offset_bottom = 611.0
+pivot_offset = Vector2(11.0, 11.0)
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+metadata/motion = "twinkle"
+metadata/speed = 1.6
+metadata/phase = 2.2
+metadata/low = 0.15
+
+[node name="Star_4" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 289.0
+offset_top = 629.0
+offset_right = 311.0
+offset_bottom = 651.0
+pivot_offset = Vector2(11.0, 11.0)
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+metadata/motion = "twinkle"
+metadata/speed = 1.9
+metadata/phase = 3.3000000000000003
+metadata/low = 0.15
+
+[node name="Star_5" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 1089.0
+offset_top = 149.0
+offset_right = 1111.0
+offset_bottom = 171.0
+pivot_offset = Vector2(11.0, 11.0)
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+metadata/motion = "twinkle"
+metadata/speed = 2.2
+metadata/phase = 4.4
+metadata/low = 0.15
+
+[node name="Glow_Blue" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 700.0
+offset_top = 100.0
+offset_right = 1180.0
+offset_bottom = 580.0
+pivot_offset = Vector2(240.0, 240.0)
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
+metadata/motion = "glow"
+metadata/speed = 1.2
+
+[node name="Earth" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 798.0
+offset_top = 198.0
+offset_right = 1082.0
+offset_bottom = 482.0
+pivot_offset = Vector2(142.0, 142.0)
+mouse_filter = 2
+texture = ExtResource("6")
+expand_mode = 1
+metadata/motion = "pulse"
+metadata/amp = 0.015
+metadata/speed = 0.8
+
+[node name="Trail1" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 220
+offset_top = 412
+offset_right = 232
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = 0.0
+
+[node name="Trail2" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 192
+offset_top = 412
+offset_right = 204
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -0.7
+
+[node name="Trail3" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 164
+offset_top = 412
+offset_right = 176
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.976, 0.929, 0.196, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -1.4
+
+[node name="Trail4" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 136
+offset_top = 412
+offset_right = 148
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -2.0999999999999996
+
+[node name="Trail5" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 108
+offset_top = 412
+offset_right = 120
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -2.8
+
+[node name="Trail6" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 80
+offset_top = 412
+offset_right = 92
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -3.5
+
+[node name="Trail7" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 52
+offset_top = 412
+offset_right = 64
+offset_bottom = 418
+mouse_filter = 2
+color = Color(0.969, 0.580, 0.114, 1)
+metadata/motion = "blink"
+metadata/speed = 6.0
+metadata/phase = -4.199999999999999
+
+[node name="Spaceship" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 240.0
+offset_right = 560.0
+offset_bottom = 560.0
+pivot_offset = Vector2(160.0, 160.0)
+mouse_filter = 2
+texture = ExtResource("7")
+expand_mode = 1
+metadata/motion = "bob"
+metadata/amp = 8.0
+metadata/speed = 1.8
