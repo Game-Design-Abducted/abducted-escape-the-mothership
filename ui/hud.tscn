@@ -1,18 +1,20 @@
-[gd_scene load_steps=2 format=3 uid="uid://b3x2mowpqj4dd"]
+[gd_scene format=3 uid="uid://b3x2mowpqj4dd"]
 
-[ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" uid="uid://heb1g7hifisn" path="res://ui/hud.gd" id="1_hud"]
+[ext_resource type="FontFile" uid="uid://dhjbpar0jp4ov" path="res://assets/fonts/VT323.ttf" id="2_276te"]
+[ext_resource type="Texture2D" uid="uid://bpltgl6tm6wcy" path="res://assets/sprites/Laser Item.png" id="3_546lt"]
 
-[node name="HUD" type="CanvasLayer"]
+[node name="HUD" type="CanvasLayer" unique_id=1149070721]
 process_mode = 3
 script = ExtResource("1_hud")
 
-[node name="Hearts" type="HBoxContainer" parent="."]
+[node name="Hearts" type="HBoxContainer" parent="." unique_id=239157412]
 offset_left = 16.0
-offset_top = 12.0
+offset_top = -14.0
 offset_right = 216.0
-offset_bottom = 56.0
+offset_bottom = 30.0
 
-[node name="TimeLabel" type="Label" parent="."]
+[node name="TimeLabel" type="Label" parent="." unique_id=1888918363]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -21,11 +23,12 @@ offset_top = 12.0
 offset_right = 100.0
 offset_bottom = 56.0
 grow_horizontal = 2
+theme_override_fonts/font = ExtResource("2_276te")
 theme_override_font_sizes/font_size = 32
 text = "3:00"
 horizontal_alignment = 1
 
-[node name="LaserLabel" type="Label" parent="."]
+[node name="LaserLabel" type="Label" parent="." unique_id=1347273989]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -34,11 +37,12 @@ offset_top = 16.0
 offset_right = -16.0
 offset_bottom = 52.0
 grow_horizontal = 0
+theme_override_fonts/font = ExtResource("2_276te")
 theme_override_font_sizes/font_size = 22
 text = "Laser charge: 0 / 10 kills"
 horizontal_alignment = 2
 
-[node name="MessageLabel" type="Label" parent="."]
+[node name="MessageLabel" type="Label" parent="." unique_id=367346835]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -50,6 +54,34 @@ offset_right = 400.0
 offset_bottom = 40.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_276te")
 theme_override_font_sizes/font_size = 40
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="." unique_id=1555764664]
+offset_left = 225.0
+offset_top = 7.0
+offset_right = 281.0
+offset_bottom = 27.0
+theme_override_fonts/font = ExtResource("2_276te")
+theme_override_font_sizes/font_size = 20
+text = "LEVEL 1"
+
+[node name="WaveLabel" type="Label" parent="." unique_id=1180600476]
+offset_left = 292.0
+offset_top = 7.0
+offset_right = 366.0
+offset_bottom = 43.0
+theme_override_fonts/font = ExtResource("2_276te")
+theme_override_font_sizes/font_size = 20
+text = "WAVE 1"
+
+[node name="LaserIcon" type="TextureRect" parent="." unique_id=1229149920]
+offset_left = 987.0
+offset_top = 4.0
+offset_right = 1041.0
+offset_bottom = 49.0
+texture = ExtResource("3_546lt")
+expand_mode = 1
+stretch_mode = 5

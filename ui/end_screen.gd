@@ -34,35 +34,55 @@ var _sfx: AudioStreamPlayer
 
 func _ready() -> void:
 	_won = GameState.last_result_won
-	title.text = "YOU ESCAPED!" if _won else "GAME OVER"
+	var time_up := not _won and GameState.time_left <= 0.0
+
+	if _won:
+		title.text = "YOU ESCAPED!"
+	elif time_up:
+		title.text = "TIME UP!"
+	else:
+		title.text = "GAME OVER"
+
 	if not _won:
 		title.add_theme_color_override("font_color", LOSE_TITLE_COLOR)
-	$VBox/Subtitle.text = "Welcome home, astronaut." if _won else "The aliens got you on level %d." % GameState.current_level
+
+	if _won:
+		$VBox/Subtitle.text = "Welcome home, astronaut."
+	elif time_up:
+		$VBox/Subtitle.text = "Time ran out on level %d." % GameState.current_level
+	else:
+		$VBox/Subtitle.text = "The aliens got you on level %d." % GameState.current_level
+
 	art.texture = WIN_ART if _won else LOSE_ART
 	$Jingle.stream = WIN_SOUND if _won else LOSE_SOUND
 	$Jingle.play()
+
 	_sfx = AudioStreamPlayer.new()
 	add_child(_sfx)
 
 	retry_button.visible = not _won
 	var first: Button = menu_button if _won else retry_button
-	first.grab_focus()   # before connecting, so no hover sound on load
+	first.grab_focus()
+
 	retry_button.pressed.connect(_leave.bind(GameState.retry_level))
 	menu_button.pressed.connect(_leave.bind(GameState.goto.bind("title")))
+
 	for button: Button in [retry_button, menu_button]:
 		button.mouse_entered.connect(_on_hover.bind(button, true))
-		button.mouse_entered.connect(_play.bind(SFX_HOVER))   # mouse only: focus would play it again
+		button.mouse_entered.connect(_play.bind(SFX_HOVER))
 		button.mouse_exited.connect(_on_hover.bind(button, false))
 		button.focus_entered.connect(_on_hover.bind(button, true))
 		button.focus_exited.connect(_on_hover.bind(button, false))
 
-	# Fade in, and pop the title once the layout has given it a size
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.5)
+
 	await get_tree().process_frame
+
 	art.pivot_offset = art.size / 2.0
 	title.pivot_offset = title.size / 2.0
 	title.scale = Vector2(0.5, 0.5)
+
 	create_tween().tween_property(title, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
