@@ -22,7 +22,7 @@ const CONTROLS := [
 const STEPS := [
 	"1  Shoot monsters to charge the laser",
 	"2  Grab the laser gun",
-	"3  Fire when the beam is in the ring",
+	"3  Win the laser mini-game to hit it",
 ]
 ## [item kind, name, what it does]
 const JUNK := [

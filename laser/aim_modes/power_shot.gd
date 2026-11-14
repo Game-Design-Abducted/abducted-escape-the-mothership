@@ -108,6 +108,10 @@ func _draw() -> void:
 	var in_zone := power >= z.x and power <= z.y
 	var fill_color := Color(0.3, 1.0, 0.4) if in_zone else (Color(1.0, 0.3, 0.2) if power > z.y else Color(1.0, 0.85, 0.3))
 	draw_rect(Rect2(bar.position.x, bar.end.y - fill, BAR_SIZE.x, fill), fill_color)
+	# Zone edges on top, sticking out of the bar, so they stay visible under the fill
+	for edge in [z.x, z.y]:
+		var y: float = bar.end.y - BAR_SIZE.y * edge
+		draw_line(Vector2(bar.position.x - 7, y), Vector2(bar.end.x + 7, y), Color.WHITE, 2.0)
 	draw_rect(bar.grow(3), Color(1.0, 0.82, 0.0), false, 2.0)
 	if not _charging and _armed_in <= 0.0:
 		var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 150.0)
