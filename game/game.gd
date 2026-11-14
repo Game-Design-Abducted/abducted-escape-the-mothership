@@ -37,6 +37,7 @@ const MUSIC := {
 	1: preload("res://assets/audio/music/bgm_level.ogg"),
 	2: preload("res://assets/audio/music/bgm_boss.ogg"),
 }
+const SHIP_PRANKS := preload("res://game/ship_pranks.gd")
 const SFX_LEVEL_START := preload("res://assets/audio/sfx/level_start.wav")
 const SFX_LASER_SPAWN := preload("res://assets/audio/sfx/laser_spawn.wav")
 const SFX_PICKUP := preload("res://assets/audio/sfx/pickup.wav")
@@ -156,6 +157,13 @@ func _ready() -> void:
 	_level = level
 	_player = player
 	drop_manager.setup(level, player)
+
+	# 12. Ship pranks: every ~40 s a short silly twist (lights out, floor wax...)
+	var pranks := Node.new()
+	pranks.name = "ShipPranks"
+	pranks.set_script(SHIP_PRANKS)
+	add_child(pranks)
+	pranks.setup(level, player)
 
 	# 8. Audio (connected before the clock starts, so level_started is heard)
 	_setup_audio(level_number)

@@ -69,6 +69,7 @@ var _protected_for := 0.0     # seconds of hatching left
 var _bob := 0.0
 var _pop := 1.0               # extra sprite scale, tweened by the hit pop
 var _dance_left := 0.0        # Disco Ball drop: stands still, wiggles and can't hurt
+var speed_scale := 1.0        # BALLOON PARTY ship prank slows monsters down
 var _corners := PackedFloat32Array()   # filled on first use, see _corner_offsets()
 
 @onready var sprite: Sprite2D = $Sprite2D
@@ -95,9 +96,9 @@ func _process(delta: float) -> void:
 		_pause_left -= delta
 	else:
 		var before := progress
-		progress += speed * delta
+		progress += speed * speed_scale * delta
 		_stop_at_corner(before)
-		_bob += speed * delta * BOB_PER_PIXEL
+		_bob += speed * speed_scale * delta * BOB_PER_PIXEL
 	_apply_zigzag(delta)
 	_update_look()
 	# body_entered only fires at the moment of first touch, so re-check a few
@@ -164,6 +165,15 @@ func dance(seconds: float) -> void:
 		return
 	_dance_left = maxf(_dance_left, seconds)
 	_pause_left = maxf(_pause_left, seconds)
+
+
+## BALLOON PARTY ship prank (game/ship_pranks.gd): puffed up and floaty.
+## Bigger hitbox, so easier to shoot (and to bump into), and slower.
+func balloon(on: bool) -> void:
+	if _dead:
+		return
+	speed_scale = 0.6 if on else 1.0
+	create_tween().tween_property(self, "scale", Vector2.ONE * (1.5 if on else 1.0), 0.35) 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func is_dancing() -> bool:

@@ -24,6 +24,7 @@ signal wave_started(wave_number: int)
 # ---- Laser (emitted by Yang's laser_manager.gd) ----
 signal laser_spawned(position: Vector2)          ## HUD: "Laser available!"
 signal laser_picked_up                           ## gameplay freezes and aim mode starts
+signal laser_mode_started(mode_name: String, how_to: String)   ## which laser mini-game this shot is (HUD shows it)
 signal laser_fired(hit: bool)                    ## hit = origin destroyed, miss = retry later
 signal laser_charge_changed(kills: int, kills_needed: int)   ## laser charges from kills
 signal laser_quota_changed(progress: Dictionary)             ## per monster type: {"basic": [kills, needed], ...}

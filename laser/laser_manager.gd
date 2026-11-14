@@ -31,7 +31,7 @@ extends Node
 ## whole charge. Level 2 only sends basics inside "mixed" waves (a random
 ## pick of the 3 types), about 1 in 6 of its monsters.
 const FIRST_QUOTAS := {
-	1: {"basic": 6, "fast": 4, "tank": 2},
+	1: {"basic": 10, "fast": 7, "tank": 3},
 	2: {"basic": 2, "fast": 6, "tank": 2},
 }
 ## Kills needed after a hit that didn't finish the origin, or after a miss, per level
@@ -54,8 +54,25 @@ const PITY_SPEED_MIN := 0.5
 ## 900 px away is as hard to hit as one 300 px away would be without it
 const HIT_RADIUS_PER_DISTANCE := 0.06
 
+## LASER MODES: every shot is a different little game, so the third laser of a
+## level doesn't feel like the first. The first shot of level 1 is always SWEEP
+## (it teaches the idea), level 2 opens with TRICK SHOT, then each shot picks a
+## random mode from the level's pool, never the same one twice in a row.
+const MODES := {
+	"sweep": preload("res://laser/aim_mode.gd"),
+	"power": preload("res://laser/aim_modes/power_shot.gd"),
+	"beat": preload("res://laser/aim_modes/beat_drop.gd"),
+	"trick": preload("res://laser/aim_modes/trick_shot.gd"),
+}
+const FIRST_MODE := {1: "sweep", 2: "trick"}
+const MODE_POOL := {
+	1: ["sweep", "power", "beat"],
+	2: ["sweep", "power", "beat", "trick"],
+}
+## Trick shot bounces, so the far end of the line moves faster: sweep a bit slower
+const TRICK_SPEED_FACTOR := 0.75
+
 const PICKUP_SCENE := preload("res://laser/laser_pickup.tscn")
-const AIM_SCRIPT := preload("res://laser/aim_mode.gd")
 
 var _level: Level
 var _player: Node2D
@@ -67,6 +84,9 @@ var _needed := 0
 var _quota := {}         ## monster type -> kills needed for the current charge
 var _counts := {}        ## monster type -> kills counted so far
 var _charging := false   ## true while counting kills toward the next pickup
+var _last_mode := ""
+## For tests: force the next shot's mode ("" = pick normally)
+var next_mode := ""
 
 
 func setup(level: Level, player: Node2D, origin: Origin) -> void:
@@ -159,10 +179,15 @@ func _on_picked_up() -> void:
 func _start_aim() -> void:
 	get_tree().paused = true
 	Events.laser_picked_up.emit()
+	var mode := _pick_mode()
 	var aim = Node2D.new()
-	aim.set_script(AIM_SCRIPT)
+	aim.set_script(MODES[mode])
 	aim.from_position = _player.global_position
+	aim.level_number = GameState.current_level
+	aim.assist = minf(1.0 + PITY_RADIUS_PER_MISS * _misses, PITY_RADIUS_MAX)
 	var speed := sweep_speed_level_2 if GameState.current_level >= 2 else sweep_speed_level_1
+	if mode == "trick":
+		speed *= TRICK_SPEED_FACTOR
 	aim.sweep_speed = speed * maxf(pow(PITY_SPEED_PER_MISS, _misses), PITY_SPEED_MIN)
 	aim.target = _origin
 	aim.hit_radius = _origin.hit_radius
@@ -170,13 +195,30 @@ func _start_aim() -> void:
 	# Start pointing AWAY from the origin, so the player gets time to read the sweep
 	var away := _player.global_position - _origin.global_position
 	aim.start_angle = away.angle() if away != Vector2.ZERO else 0.0
-	aim.fired.connect(_on_fired)
+	aim.fired.connect(_on_fired.bind(aim))
 	_level.add_child(aim)
+	Events.laser_mode_started.emit(aim.mode_name(), aim.how_to())
 
 
-func _on_fired(direction: Vector2) -> void:
+func _pick_mode() -> String:
+	var mode := next_mode
+	next_mode = ""
+	if mode == "":
+		if _last_mode == "":
+			mode = FIRST_MODE.get(GameState.current_level, "sweep")
+		else:
+			var pool: Array = MODE_POOL.get(GameState.current_level, MODE_POOL[1]).duplicate()
+			pool.erase(_last_mode)
+			mode = pool.pick_random()
+	_last_mode = mode
+	return mode
+
+
+func _on_fired(direction: Vector2, aim: Node) -> void:
 	var hit := false
-	if _origin != null:
+	if aim.result >= 0:
+		hit = aim.result == 1   # the mode decided (timing modes, trick shot)
+	elif _origin != null:
 		# Same zone the aim ring shows: pity radius + a bonus for distance
 		var pity_radius := _origin.hit_radius
 		_origin.hit_radius = pity_radius + HIT_RADIUS_PER_DISTANCE * _player.global_position.distance_to(_origin.global_position)

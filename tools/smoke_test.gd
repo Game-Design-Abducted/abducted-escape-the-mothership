@@ -56,9 +56,11 @@ func _find_aim(game: Node) -> Node:
 	return null
 
 
-## Kill-charges the laser, walks the player onto the pickup, returns the aim node
-func _get_to_aim_mode(game: Node, player: Node2D) -> Node:
+## Kill-charges the laser, walks the player onto the pickup, returns the aim node.
+## mode forces the laser mode ("sweep", "power", "beat", "trick").
+func _get_to_aim_mode(game: Node, player: Node2D, mode := "sweep") -> Node:
 	var lm := game.get_node("LaserManager")
+	lm.next_mode = mode
 	while lm._charging:
 		for type in lm._quota:   # the charge needs a quota of every monster type
 			var fake := Node.new()
@@ -73,6 +75,51 @@ func _get_to_aim_mode(game: Node, player: Node2D) -> Node:
 	for i in 8:
 		await physics_frame
 	return _find_aim(game)
+
+
+func _laser_key(pressed: bool) -> void:
+	var ev := InputEventAction.new()
+	ev.action = "fire_laser"
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
+	await process_frame
+
+
+## POWER SHOT: hold until the bar reaches `power`, then let go (power > 1 = never let go)
+func _power_shot(aim: Node, power: float) -> void:
+	await create_timer(0.5).timeout   # arm delay
+	await _laser_key(true)
+	var until := Time.get_ticks_msec() + 3000
+	while Time.get_ticks_msec() < until:
+		if not is_instance_valid(aim) or aim._fired or aim.power >= power:
+			break
+		await process_frame
+	await _laser_key(false)
+	await process_frame
+
+
+## BEAT DROP: press on every beat (or mash = press 6 times right away)
+func _beat_drop(aim: Node, mash: bool) -> void:
+	if mash:
+		await create_timer(0.9).timeout
+		for i in 6:
+			await _laser_key(true)
+			await _laser_key(false)
+	else:
+		var until := Time.get_ticks_msec() + 5000
+		while Time.get_ticks_msec() < until:
+			if not is_instance_valid(aim) or aim._fired:
+				break
+			if absf(aim.to_next_beat()) < 0.03:
+				await _laser_key(true)
+				await _laser_key(false)
+			await process_frame
+	var wait_until := Time.get_ticks_msec() + 4000   # a miss is only decided after the last beat
+	while Time.get_ticks_msec() < wait_until:
+		if not is_instance_valid(aim) or aim._fired:
+			break
+		await process_frame
+	await process_frame
 
 
 func _fire(aim: Node, direction: Vector2) -> void:
@@ -582,19 +629,45 @@ func _run() -> void:
 	aim._angle = to_origin.angle()
 	var near_speed: float = aim.current_speed()
 	_check("aim slows down next to the target (lock-on)", near_speed < far_speed * 0.6, "%.0f vs %.0f deg/s" % [near_speed, far_speed])
+	var modes_seen := []
+	_events.laser_mode_started.connect(func(mode_name: String, _how: String): modes_seen.append(mode_name))
 	var radius_before: float = origin.hit_radius
 	await _fire(aim, -to_origin)
 	_check("pity laser: a miss makes the target bigger", origin.hit_radius > radius_before, "%.0f -> %.0f px" % [radius_before, origin.hit_radius])
 	_check("miss: game resumes, origin alive, laser recharging", not paused and not origin.destroyed and lm._charging,
 			"needs %d kills" % lm._needed)
 
-	# Laser: the origin has to take laser_hits_needed hits, the last one wins the level
-	for n in origin.laser_hits_needed:
-		aim = await _get_to_aim_mode(game, player)
-		to_origin = (origin.global_position - player.global_position).normalized()
-		await _fire(aim, to_origin)
-		if n < origin.laser_hits_needed - 1:
-			_check("hit %d: origin survives and the laser recharges" % (n + 1), not origin.destroyed and lm._charging)
+	# Laser modes: each one can miss, and each one can hit
+	aim = await _get_to_aim_mode(game, player, "power")
+	_check("POWER SHOT: the HUD names the laser mode", modes_seen.has("POWER SHOT"), str(modes_seen))
+	await _power_shot(aim, 0.2)
+	_check("POWER SHOT: letting go too early misses", not paused and not origin.destroyed and lm._charging and aim.result == 0)
+	aim = await _get_to_aim_mode(game, player, "power")
+	await _power_shot(aim, 2.0)
+	_check("POWER SHOT: holding too long overcharges and misses", not paused and aim.result == 0)
+	aim = await _get_to_aim_mode(game, player, "beat")
+	await _beat_drop(aim, true)
+	_check("BEAT DROP: mashing the button misses", not paused and aim.result == 0)
+	aim = await _get_to_aim_mode(game, player, "trick")
+	to_origin = (origin.global_position - player.global_position).normalized()
+	await _fire(aim, to_origin)
+	_check("TRICK SHOT: a straight shot doesn't count", not paused and aim.result == 0)
+
+	# The origin has to take laser_hits_needed hits, the last one wins the level.
+	# 3 here so every mode gets a hit: trick, beat, then power wins.
+	origin.laser_hits_needed = 3
+	aim = await _get_to_aim_mode(game, player, "trick")
+	var bank: Array = aim.bot_want_angles()
+	_check("TRICK SHOT: there is a bounce angle to the target", not bank.is_empty())
+	if not bank.is_empty():
+		await _fire(aim, Vector2.from_angle(bank[0]))
+	_check("TRICK SHOT: a bounced shot hits", aim.result == 1 and not origin.destroyed and lm._charging, str(aim.result))
+	aim = await _get_to_aim_mode(game, player, "beat")
+	await _beat_drop(aim, false)
+	_check("BEAT DROP: pressing on the beats hits", aim.result == 1 and not origin.destroyed and lm._charging, str(aim.result))
+	aim = await _get_to_aim_mode(game, player, "power")
+	await _power_shot(aim, aim.ZONE_CENTER)
+	_check("POWER SHOT: letting go in the green hits", aim.result == 1, str(aim.result))
 	_check("hit: origin destroyed and level won", origin.destroyed and _state.last_result_won and not _state.running)
 	var silent := []
 	for sound in ["player_hurt", "shoot", "enemy_die", "laser_spawn", "pickup", "laser_charge",
@@ -618,6 +691,26 @@ func _run() -> void:
 	_check("Commander keeps moving while the game is paused (aiming)", before.distance_to(origin.global_position) > 10.0)
 	_check("level 2 plays the boss music, also while paused", _music_of(game) == "bgm_boss.ogg playing", _music_of(game))
 	paused = false
+
+	# Ship pranks: each one turns on after the warning and off again
+	var pranks: Node = game.get_node("ShipPranks")
+	var p2: Node2D = get_first_node_in_group("player")
+	var monster := get_first_node_in_group("enemies")
+	for kind in ["lights", "wax", "balloon", "reverse"]:
+		pranks.announce(kind)
+		_check("prank %s: banner warns first, effect waits" % kind, pranks._banner.visible and pranks.active == "")
+		await create_timer(pranks.WARNING_TIME + 0.2).timeout
+		var on := false
+		match kind:
+			"lights": on = is_instance_valid(pranks._dark)
+			"wax": on = p2.slippery
+			"reverse": on = p2.controls_reversed
+			"balloon": on = monster == null or monster.speed_scale < 1.0
+		_check("prank %s: turns on" % kind, pranks.active == kind and on)
+		pranks.stop()
+		await create_timer(0.5).timeout
+		var off: bool = pranks.active == "" and not p2.slippery and not p2.controls_reversed 				and not is_instance_valid(pranks._dark) and (not is_instance_valid(monster) or monster.speed_scale == 1.0)
+		_check("prank %s: turns off again" % kind, off)
 
 	# Timeout loses
 	_state.time_left = 0.2
@@ -657,6 +750,12 @@ func _run() -> void:
 	ok = await _wait_for_scene("StoryScreen")
 	_check("level 2 win leads to the ending story", ok and _state.story_id == "ending", _state.story_id)
 	await create_timer(0.8).timeout   # the story page ignores keys for its first 0.6 s
+	var body: Label = current_scene.get_node("VBox/Body")
+	_check("story text types itself out", body.visible_ratio < 1.0, str(body.visible_ratio))
+	await _press_any_key()
+	await process_frame
+	_check("first key on a story page shows the whole text", body.visible_ratio == 1.0 and current_scene.name == "StoryScreen",
+			"%s, %s" % [body.visible_ratio, current_scene.name])
 	await _press_any_key()
 	ok = await _wait_for_scene("EndScreen")
 	_check("ending story leads to the win screen", ok and _state.last_result_won, current_scene.name)
@@ -684,7 +783,9 @@ func _run() -> void:
 	_check("START leads to the intro story", ok and _state.story_id == "intro" and _state.current_level == 1,
 			"%s, level %d" % [_state.story_id, _state.current_level])
 	await create_timer(0.8).timeout
-	await _press_any_key()
+	await _press_any_key()   # finish the typing
+	await process_frame
+	await _press_any_key()   # continue
 	ok = await _wait_for_scene("Game")
 	await process_frame
 	_check("intro story leads to level 1", ok and _state.current_level == 1 and _state.running, current_scene.name)

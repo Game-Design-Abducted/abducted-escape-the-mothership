@@ -41,6 +41,10 @@ var hp: int
 var facing := Vector2.RIGHT
 var _invincible := false
 var _cooldown := 0.0
+## Ship pranks (game/ship_pranks.gd)
+var controls_reversed := false   ## CONTROLS REVERSED: left is right
+var slippery := false            ## FLOOR WAX DAY: you slide instead of stopping
+const SLIP_GRIP := 2.2           ## how fast you get a grip on the wax (higher = less slide)
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -54,7 +58,12 @@ func _physics_process(delta: float) -> void:
 	if hp <= 0:
 		return
 	var dir := _get_move_dir()
-	velocity = dir * speed
+	if controls_reversed:
+		dir = -dir
+	if slippery:
+		velocity = velocity.lerp(dir * speed, minf(SLIP_GRIP * delta, 1.0))
+	else:
+		velocity = dir * speed
 	if dir != Vector2.ZERO:
 		facing = dir.normalized()
 		sprite.flip_h = facing.x < 0

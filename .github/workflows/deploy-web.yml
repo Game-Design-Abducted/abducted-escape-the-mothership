@@ -1,0 +1,89 @@
+name: Deploy web build
+
+# Exports the game for the browser and publishes it to GitHub Pages on every
+# push to main. Play it at https://<owner>.github.io/<repo>/
+#
+# One-time setup: repo Settings -> Pages -> Source = "GitHub Actions".
+# To build the same thing on your own machine: Project -> Export -> Web -> Export Project
+# (the "Web" preset lives in export_presets.cfg).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push replaces a waiting one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.3-stable   # keep in step with config/features in project.godot
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Export for Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Godot
+        run: |
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          rm godot.zip
+          godot --version
+
+      # The full template pack is ~1 GB, so keep only the web files and cache them.
+      - name: Cache web export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/4.3.stable
+          key: godot-web-templates-${{ env.GODOT_VERSION }}
+
+      - name: Install web export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          dir="$HOME/.local/share/godot/export_templates/4.3.stable"
+          mkdir -p "$dir"
+          curl -fsSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -j -o templates.tpz 'templates/version.txt' 'templates/web_nothreads_*' -d "$dir"
+          rm templates.tpz
+          ls -la "$dir"
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Export
+        run: |
+          mkdir -p export/web
+          godot --headless --path . --export-release "Web" export/web/index.html 2>&1 | tee export.log
+          test -f export/web/index.pck || { echo "::error::Export produced no index.pck (see the log above)"; exit 1; }
+          ls -la export/web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: export/web
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
