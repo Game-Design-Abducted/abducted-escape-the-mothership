@@ -37,6 +37,7 @@ func _ready() -> void:
 	_apply_fonts()
 	_setup_audio()
 	_twinkle_stars()
+	_add_guide_cards()
 	start_button.grab_focus() # before connecting, so no hover sound on load
 	start_button.pressed.connect(_on_start)
 	start_button.mouse_entered.connect(_on_hover.bind(true))
@@ -55,6 +56,17 @@ func _process(delta: float) -> void:
 	ufo.rotation = sin(_t * 1.3) * 0.04
 	beam.modulate.a = 0.55 + 0.25 * sin(_t * 3.0)
 	astronaut.position.y = _astro_y + sin(_t * 1.5) * 8.0
+
+
+## Controls on the left, how to win (and the Space Junk items) on the right
+func _add_guide_cards() -> void:
+	var controls := ControlsCard.controls()
+	controls.position = Vector2(36, 300)
+	add_child(controls)
+	var how := ControlsCard.how_to_win()
+	add_child(how)
+	how.reset_size()
+	how.position = Vector2(size.x - how.size.x - 36, 300)
 
 
 func _twinkle_stars() -> void:

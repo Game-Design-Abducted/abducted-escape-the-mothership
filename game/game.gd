@@ -14,6 +14,9 @@ extends Node2D
 ##      so nobody else's script has to know about audio)
 ##   9. adds the screen feel: fade in, screen shake, hit / laser flashes, music
 ##      that dips while aiming (again only by listening to Events)
+##  10. starts the Space Junk drops (items/drop_manager.gd) and the jokes:
+##      pop-up kill words, the origin taunting you when you miss, a tiny
+##      freeze-frame when the laser hits, and a victory spin
 ##
 ## Press F6 on game.tscn to play the current level directly (level 1 by default).
 ## To jump straight to level 2, change `debug_start_level` in the Inspector.
@@ -70,6 +73,25 @@ const TICK_LAST_SECONDS := 10
 @export var shake_origin_destroyed := 18.0
 ## How fast a shake dies down, pixels per second
 @export var shake_fade := 40.0
+@export var shake_bomb := 12.0
+## Freeze-frame when the laser hits, in real seconds (0 = off)
+@export var hit_stop_time := 0.12
+
+## Pop-up word on every kill
+const KILL_WORDS := ["SPLAT!", "BONK!", "POP!", "SQUISH!", "YEET!", "BLORP!", "BOOP!", "SPLOOT!"]
+const KILL_WORD_COLORS := [Color(1.0, 0.9, 0.3), Color(0.5, 1.0, 0.6), Color(1.0, 0.55, 0.8), Color(0.6, 0.85, 1.0)]
+## What the origin says after your laser shot (level 1 = egg, level 2 = commander)
+const TAUNTS_MISS := {
+	1: ["missed me!", "nice try, human", "is that a laser\nor a flashlight?", "*smug egg noises*", "I'm not even moving!"],
+	2: ["TOO SLOW, EARTHLING", "I do cardio.", "aim with your\neyes open!", "catch me if you can~", "my grandma dodges\nbetter than that"],
+}
+const TAUNTS_HIT := {
+	1: ["OW! my shell!", "that... cracked something", "hey! rude!"],
+	2: ["that tickled.", "OK that one hurt", "you'll pay for that!"],
+}
+## Shown after a miss: the next shot gets easier (laser_manager.gd PITY_*)
+const PITY_WORDS := ["laser out of pity: target BIGGER", "the laser believes in you", "aim assist: activated (shh)", "bigger target unlocked"]
+const VICTORY_WORDS := ["WOOHOO!", "EGG-CELLENT!", "GET REKT, ALIEN", "HOME, HERE I COME!"]
 
 var _last_hp := -1
 var _last_tick_second := -1
@@ -81,6 +103,10 @@ var _music_tween: Tween
 var _origin: Origin
 var _camera: Camera2D
 var _spawn_markers: Array[Node2D] = []
+var _level: Level
+var _player: Node2D
+var _bubble: Control
+var _last_word_ms := 0
 
 ## 0 = use GameState.current_level. Set 1 or 2 to force a level while testing with F6.
 @export var debug_start_level := 0
@@ -88,6 +114,7 @@ var _spawn_markers: Array[Node2D] = []
 @onready var world: Node2D = $World
 @onready var wave_manager: Node = $WaveManager
 @onready var laser_manager: Node = $LaserManager
+@onready var drop_manager: Node = $DropManager
 
 
 func _ready() -> void:
@@ -125,6 +152,11 @@ func _ready() -> void:
 	# 5. Laser (Yang)
 	laser_manager.setup(level, player, origin)
 
+	# 10. Space Junk drops
+	_level = level
+	_player = player
+	drop_manager.setup(level, player)
+
 	# 8. Audio (connected before the clock starts, so level_started is heard)
 	_setup_audio(level_number)
 	# Yang's bullets are added next to the player, so a new bullet there = a shot
@@ -134,6 +166,9 @@ func _ready() -> void:
 
 	# 9. Screen feel: fade in, shake, flashes, the origin bulging when a monster comes out
 	_setup_feel(origin)
+
+	# 11. Pause menu (ESC / P): resume, restart level, quit to menu
+	add_child(PauseMenu.new())
 
 	# 7. Start the clock
 	GameState.begin_level()
@@ -180,6 +215,138 @@ func _setup_feel(origin: Origin) -> void:
 		_shake = maxf(_shake, shake_origin_destroyed)
 		_flash_from(Color(1, 1, 1, 0.85), 0.6))
 	Events.level_finished.connect(_on_level_finished)
+
+	# 10. Space Junk + jokes
+	Events.enemy_killed.connect(_on_enemy_killed_word)
+	Events.item_dropped.connect(_on_item_dropped)
+	Events.item_used.connect(_on_item_used)
+	drop_manager.boom.connect(_on_bomb_boom)
+	Events.laser_fired.connect(_on_laser_fired_feel)
+	Events.origin_destroyed.connect(_on_origin_destroyed_feel)
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0   # never leave a hit-stop running into the next scene
+
+
+# ---------- 10. Space Junk + jokes ----------
+
+## A pop-up word where a monster died. Throttled so a bomb doesn't fill the screen.
+func _on_enemy_killed_word(enemy: Node) -> void:
+	if not (is_instance_valid(enemy) and enemy is Node2D) or _level == null:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_word_ms < 90:
+		return
+	_last_word_ms = now
+	FloatText.spawn(_level, (enemy as Node2D).global_position + Vector2(0, -18),
+			KILL_WORDS.pick_random(), KILL_WORD_COLORS.pick_random(), 18)
+
+
+func _on_item_dropped(_kind: String, _at: Vector2) -> void:
+	_play(SFX_LASER_SPAWN, frequent_sfx_volume_db, 1.7)   # a little "ding!"
+
+
+func _on_item_used(kind: String, _at: Vector2) -> void:
+	match kind:
+		"bomb":
+			_play(SFX_LASER_MISS, sfx_volume_db, 0.55)   # the wheeze
+		"disco":
+			_play(SFX_PICKUP, sfx_volume_db, 1.3)
+			_play(SFX_LEVEL_START, sfx_volume_db, 1.25)
+			_flash_from(Color(1.0, 0.4, 1.0, 0.3), 0.5)
+			# The music speeds up while everyone dances
+			_music.pitch_scale = 1.15
+			get_tree().create_timer(drop_manager.DISCO_TIME, false).timeout.connect(_end_disco_music)
+		"snack":
+			_play(SFX_PICKUP, sfx_volume_db, 0.8)
+			_flash_from(Color(1.0, 0.85, 0.3, 0.25), 0.4)
+
+
+func _end_disco_music() -> void:
+	_music.pitch_scale = 1.0
+
+
+func _on_bomb_boom(_at: Vector2) -> void:
+	_shake = maxf(_shake, shake_bomb)
+	_play(SFX_ORIGIN_DESTROYED, sfx_volume_db, 1.5)
+	_flash_from(Color(0.5, 1.0, 0.3, 0.2), 0.35)
+
+
+## Freeze-frame on a hit, and the origin talks back
+func _on_laser_fired_feel(hit: bool) -> void:
+	if hit and hit_stop_time > 0.0:
+		Engine.time_scale = 0.05
+		get_tree().create_timer(hit_stop_time, true, false, true).timeout.connect(_end_hit_stop)
+	if not hit and is_instance_valid(_player):
+		FloatText.spawn(_level, _player.global_position + Vector2(0, -36), PITY_WORDS.pick_random(),
+				Color(1.0, 0.9, 0.3), 20, 34.0, 1.6)
+	if not is_instance_valid(_origin) or _origin.destroyed:
+		return
+	var lines: Dictionary = TAUNTS_HIT if hit else TAUNTS_MISS
+	var level_lines: Array = lines.get(GameState.current_level, lines[1])
+	_say(level_lines.pick_random())
+
+
+func _end_hit_stop() -> void:
+	Engine.time_scale = 1.0
+
+
+## A speech bubble above the origin for a couple of seconds
+func _say(line: String) -> void:
+	if is_instance_valid(_bubble):
+		_bubble.queue_free()
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(1, 1, 1, 0.95)
+	style.border_color = Color(0.1, 0.05, 0.2)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", style)
+	var label := Label.new()
+	label.text = line
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_override("font", FloatText.FONT)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color(0.1, 0.05, 0.2))
+	panel.add_child(label)
+	panel.z_index = 60
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_origin.add_child(panel)   # follows the Commander around
+	panel.reset_size()
+	panel.position = Vector2(-panel.size.x / 2.0, -panel.size.y - 52.0)
+	panel.pivot_offset = Vector2(panel.size.x / 2.0, panel.size.y)
+	if _origin.global_position.y + panel.position.y < 56.0:   # would cover the HUD: say it below instead
+		panel.position.y = 52.0
+		panel.pivot_offset.y = 0.0
+	panel.scale = Vector2(0.2, 0.2)
+	_bubble = panel
+	var tween := panel.create_tween()
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(2.0)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(panel.queue_free)
+
+
+## The astronaut does a happy spin while the level fades out
+func _on_origin_destroyed_feel() -> void:
+	if is_instance_valid(_bubble):
+		_bubble.queue_free()
+	if not is_instance_valid(_player):
+		return
+	var sprite := _player.get_node_or_null("Sprite2D") as Node2D
+	if sprite:
+		var base_scale := sprite.scale
+		var tween := sprite.create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		tween.tween_property(sprite, "rotation", sprite.rotation + TAU * 2.0, 0.9).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(sprite, "scale", base_scale * 1.3, 0.2)
+		tween.tween_property(sprite, "scale", base_scale, 0.3)
+	FloatText.spawn(_level, _player.global_position + Vector2(0, -34), VICTORY_WORDS.pick_random(),
+			Color(1.0, 0.9, 0.3), 28, 40.0, 1.4)
 
 
 ## The origin bulges each time a monster comes out, and so does the floor mark
@@ -299,10 +466,11 @@ func _on_time_changed(seconds_left: float) -> void:
 
 ## Plays one sound effect. Each call gets its own player, so sounds can overlap,
 ## and it runs while paused because the laser sounds happen during aim mode.
-func _play(stream: AudioStream, volume_db := sfx_volume_db) -> void:
+func _play(stream: AudioStream, volume_db := sfx_volume_db, pitch := 1.0) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
 	player.volume_db = volume_db
+	player.pitch_scale = pitch
 	player.process_mode = Node.PROCESS_MODE_ALWAYS
 	player.finished.connect(player.queue_free)
 	add_child(player)

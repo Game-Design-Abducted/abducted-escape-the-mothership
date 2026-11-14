@@ -350,6 +350,16 @@ func _level_2_checks() -> void:
 
 
 ## Waits (up to `seconds`) until the scene with this root name is showing
+## The level's pause menu (by script path: naming the PauseMenu class here would
+## compile it before the autoloads exist)
+func _pause_menu_of(scene: Node) -> Node:
+	var script := load("res://ui/pause_menu.gd")
+	for c in scene.get_children():
+		if c.get_script() == script:
+			return c
+	return null
+
+
 func _wait_for_scene(scene_name: String, seconds := 5.0) -> bool:
 	var deadline := Time.get_ticks_msec() + int(seconds * 1000.0)
 	while Time.get_ticks_msec() < deadline:
@@ -492,6 +502,63 @@ func _run() -> void:
 	_check("kill charges the laser", lm._kills == kills_before + 1, "%d / %d" % [lm._kills, lm._needed])
 	player.global_position = Vector2(300, 300)
 
+	# Space Junk drops: each one dropped right under the player, so stepping on it is instant
+	var dm := game.get_node("DropManager")
+	# Burrito: +1 HP
+	player.hp = player.max_hp - 1
+	dm.drop("snack", player.global_position)
+	for i in 6:
+		await physics_frame
+	_check("Space Burrito heals 1 HP", player.hp == player.max_hp, "hp %d/%d" % [player.hp, player.max_hp])
+	# Disco Ball: every monster dances, stays put and can't hurt
+	var dancers := get_nodes_in_group("enemies").filter(func(e): return not e._dead)
+	dm.drop("disco", player.global_position)
+	for i in 6:
+		await physics_frame
+	var all_dance := dancers.size() > 0
+	for e in dancers:
+		all_dance = all_dance and (not is_instance_valid(e) or e.is_dancing())
+	_check("Disco Ball makes every monster dance", all_dance, "%d monsters" % dancers.size())
+	if dancers.size() > 0 and is_instance_valid(dancers[0]):
+		var dancer: Node2D = dancers[0]
+		var before_progress: float = dancer.progress
+		var hp_before: int = player.hp
+		player._invincible = false
+		for i in 30:   # 0.5 s standing right on it
+			if is_instance_valid(dancer):
+				player.global_position = dancer.global_position
+			await physics_frame
+		_check("a dancing monster stands still and doesn't hurt", is_instance_valid(dancer) and dancer.progress == before_progress and player.hp == hp_before,
+				"moved %.1f px, hp %d -> %d" % [dancer.progress - before_progress if is_instance_valid(dancer) else -1.0, hp_before, player.hp])
+	player.global_position = Vector2(300, 300)
+	await create_timer(dm.DISCO_TIME).timeout
+	# Whoopee Bomb: monsters in range pop, and the kill counts like any other
+	var victim: Node2D = null
+	for e in get_nodes_in_group("enemies"):
+		if not e._dead:
+			victim = e
+			break
+	if victim == null:
+		_check("Whoopee Bomb pops monsters nearby", false, "no monster alive to test on")
+	else:
+		victim.speed = 0.0
+		victim._protected_for = 0.0
+		victim._pause_left = 0.0
+		var bomb_at: Vector2 = victim.global_position + Vector2(dm.BOMB_RADIUS * 0.5, 0)
+		player.global_position = bomb_at
+		var killed := [0]
+		var count_kill := func(_e): killed[0] += 1
+		_events.enemy_killed.connect(count_kill)
+		dm.drop("bomb", bomb_at)
+		await create_timer(dm.BOMB_FUSE + 0.4).timeout
+		_events.enemy_killed.disconnect(count_kill)
+		_check("Whoopee Bomb pops monsters nearby", not is_instance_valid(victim) or victim._dead, "%d killed" % killed[0])
+		_check("bomb kills count as kills (laser charge)", killed[0] >= 1, "%d" % killed[0])
+	_check("Space Junk never stacks past MAX_ON_MAP", dm._count_on_map() <= dm.MAX_ON_MAP, "%d" % dm._count_on_map())
+	player.hp = player.max_hp
+	player.global_position = Vector2(300, 300)
+	await create_timer(1.1).timeout
+
 	# Laser: pickup pauses, miss resumes and needs a recharge
 	var origin: Node2D = get_first_node_in_group("origin")
 	var aim: Node = await _get_to_aim_mode(game, player)
@@ -500,8 +567,24 @@ func _run() -> void:
 	var clock: float = _state.time_left
 	await create_timer(0.3).timeout
 	_check("clock is frozen while aiming", clock == _state.time_left)
+	# Pause menu while aiming: the line freezes, and RESUME goes back to aiming
+	var pm: Node = _pause_menu_of(game)
+	pm.pause()
+	var angle_before: float = aim._angle
+	await create_timer(0.3).timeout
+	_check("pause menu opens during aiming and freezes the aim line", pm.is_open() and paused and aim._angle == angle_before)
+	pm.resume()
+	_check("resume goes back to aiming (still paused for the laser)", not pm.is_open() and paused)
 	var to_origin: Vector2 = (origin.global_position - player.global_position).normalized()
+	# Lock-on: the sweep is slower when pointing at the target than when pointing away
+	aim._angle = (-to_origin).angle()
+	var far_speed: float = aim.current_speed()
+	aim._angle = to_origin.angle()
+	var near_speed: float = aim.current_speed()
+	_check("aim slows down next to the target (lock-on)", near_speed < far_speed * 0.6, "%.0f vs %.0f deg/s" % [near_speed, far_speed])
+	var radius_before: float = origin.hit_radius
 	await _fire(aim, -to_origin)
+	_check("pity laser: a miss makes the target bigger", origin.hit_radius > radius_before, "%.0f -> %.0f px" % [radius_before, origin.hit_radius])
 	_check("miss: game resumes, origin alive, laser recharging", not paused and not origin.destroyed and lm._charging,
 			"needs %d kills" % lm._needed)
 
@@ -605,6 +688,33 @@ func _run() -> void:
 	ok = await _wait_for_scene("Game")
 	await process_frame
 	_check("intro story leads to level 1", ok and _state.current_level == 1 and _state.running, current_scene.name)
+
+	# Pause menu in normal play: pauses, then QUIT TO MENU stops the clock and goes to the title
+	await create_timer(0.5).timeout
+	var menu: Node = _pause_menu_of(current_scene)
+	var ev_pause := InputEventAction.new()
+	ev_pause.action = "pause"
+	ev_pause.pressed = true
+	Input.parse_input_event(ev_pause)
+	await process_frame
+	await process_frame
+	_check("ESC opens the pause menu and pauses the game", menu != null and menu.is_open() and paused)
+	var t_paused: float = _state.time_left
+	await create_timer(0.3).timeout
+	_check("clock is frozen while the pause menu is open", t_paused == _state.time_left)
+	var old_scene := current_scene
+	menu._restart()
+	var deadline := Time.get_ticks_msec() + 3000
+	while (current_scene == old_scene or current_scene == null) and Time.get_ticks_msec() < deadline:
+		await process_frame
+	await create_timer(0.3).timeout
+	menu = _pause_menu_of(current_scene)
+	_check("RESTART LEVEL reloads the level, unpaused", current_scene != old_scene and current_scene.name == "Game"
+			and not paused and menu != null and not menu.is_open() and _state.running, current_scene.name)
+	menu.pause()
+	menu._quit()
+	ok = await _wait_for_scene("TitleScreen")
+	_check("QUIT TO MENU goes to the title and stops the clock", ok and not _state.running and not paused, current_scene.name)
 
 	print("")
 	print("ALL PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures)

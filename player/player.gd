@@ -24,8 +24,8 @@ extends CharacterBody2D
 ##  - bug fixing
 
 @export var speed := 180.0
-@export var max_hp := 3
-@export var invincible_time := 1.0
+@export var max_hp := 4
+@export var invincible_time := 1.5
 @export var attack_cooldown := 0.25
 @export var bullet_scene: PackedScene = preload("res://player/bullet.tscn")
 
@@ -76,6 +76,14 @@ func shoot() -> void:
 	bullet.direction = facing
 	bullet.global_position = global_position + facing * 20.0
 	get_parent().add_child(bullet)
+
+
+## Space Snack drop: +amount HP, never above max_hp
+func heal(amount: int) -> void:
+	if hp <= 0:
+		return
+	hp = mini(hp + amount, max_hp)
+	_emit_hp()
 
 
 func take_damage(amount: int) -> void:

@@ -74,6 +74,12 @@ func begin_level() -> void:
 	Events.time_changed.emit(time_left)
 
 
+## Pause menu RESTART / QUIT: stop the clock without a win or a loss, so the
+## timer can't run out (and jump to the lose screen) after leaving the level
+func stop_level() -> void:
+	running = false
+
+
 ## End screen RETRY button
 func retry_level() -> void:
 	goto("game")

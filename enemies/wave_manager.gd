@@ -36,8 +36,8 @@ const WAVES := {
 		{"type": "mixed", "count": 14, "interval": 1.0, "pause": 5.0},
 	],
 	2: [
-		{"type": "mixed", "count": 8, "interval": 1.2, "pause": 3.0},
-		{"type": "fast", "count": 8, "interval": 0.8, "pause": 3.0},
+		{"type": "mixed", "count": 8, "interval": 1.6, "pause": 4.0},    # a breather to find the Commander
+		{"type": "fast", "count": 8, "interval": 1.1, "pause": 4.0},
 		{"type": "tank", "count": 4, "interval": 1.8, "pause": 3.0},
 		{"type": "fast", "count": 10, "interval": 0.6, "pause": 3.0},
 		{"type": "mixed", "count": 14, "interval": 0.8, "pause": 3.0},
@@ -65,9 +65,15 @@ var _speed_factor := 1.0
 var _timer: Timer
 
 
+## Most monsters alive at once, per level (overrides max_alive). Playtests showed
+## up to 28 on level 2, which buried real players.
+const MAX_ALIVE := {1: 12, 2: 16}
+
+
 func setup(paths: Array[Path2D], level_number: int) -> void:
 	_paths = paths
 	_waves = WAVES.get(level_number, WAVES[1])
+	max_alive = MAX_ALIVE.get(level_number, max_alive)
 	if _paths.is_empty():
 		push_warning("WaveManager: level has no paths under 'Paths', nothing will spawn.")
 		return
