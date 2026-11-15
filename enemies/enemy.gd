@@ -2,7 +2,6 @@ class_name Enemy
 extends PathFollow2D
 ## Enemy base script, shared by basic/fast/tank (only the inspector numbers differ). Ploy's.
 ## must live under a Path2D. root in group "enemies", Hitbox on layer 3 mask 2, bullets call take_damage().
-# TODO: decide what happens at the end of a path, right now it loops forever.
 
 @export var speed := 80.0
 @export var max_hp := 1
@@ -38,6 +37,11 @@ var _pop := 1.0
 var _dance_left := 0.0
 var speed_scale := 1.0        # set by the BALLOON PARTY ship prank
 var _corners := PackedFloat32Array()
+## random routes (wave_manager sets these): when the route runs out it adds a new stretch
+var wander: RefCounted   # maze_wander.gd
+var monster_type := "basic"
+const ROUTE_LOOKAHEAD := 64.0   ## px before the end of the route to add more
+const EGG_EXIT_PX := 48.0       ## random-route monsters can't hurt you before walking this far
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var hitbox: Area2D = $Hitbox
@@ -45,7 +49,7 @@ var _corners := PackedFloat32Array()
 
 func _ready() -> void:
 	hp = max_hp
-	loop = true
+	loop = wander == null   # random routes keep growing, looping back would teleport
 	rotates = false
 	if normal_texture:
 		sprite.texture = normal_texture
@@ -63,6 +67,8 @@ func _process(delta: float) -> void:
 		_pause_left -= delta
 	else:
 		var before := progress
+		if wander and progress > (get_parent() as Path2D).curve.get_baked_length() - ROUTE_LOOKAHEAD:
+			extend_route()
 		progress += speed * speed_scale * delta
 		_stop_at_corner(before)
 		_bob += speed * speed_scale * delta * BOB_PER_PIXEL
@@ -133,6 +139,24 @@ func balloon(on: bool) -> void:
 		return
 	speed_scale = 0.6 if on else 1.0
 	create_tween().tween_property(self, "scale", Vector2.ONE * (1.5 if on else 1.0), 0.35) 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Adds the next random stretch to this monster's own path.
+func extend_route() -> void:
+	var curve := (get_parent() as Path2D).curve
+	var from := curve.get_point_position(curve.point_count - 1)
+	var route: PackedVector2Array = wander.next_route(get_parent().to_global(from), monster_type,
+			get_tree().get_first_node_in_group("player"), curve.point_count == 1)
+	for i in route.size():
+		var p: Vector2 = get_parent().to_local(route[i])
+		if not p.is_equal_approx(curve.get_point_position(curve.point_count - 1)):
+			curve.add_point(p)
+	_corners = PackedFloat32Array()   # recomputed for the longer path
+
+
+## random routes: harmless until it has walked out of the egg, so it can't hatch on top of you and hit right away
+func _leaving_egg() -> bool:
+	return wander != null and progress < EGG_EXIT_PX
 
 
 func is_dancing() -> bool:
@@ -221,5 +245,5 @@ func _flash_hit() -> void:
 
 
 func _on_hitbox_body_entered(body: Node) -> void:
-	if not _dead and not is_hatching() and not is_dancing() and body.is_in_group("player"):
+	if not _dead and not is_hatching() and not is_dancing() and not _leaving_egg() and body.is_in_group("player"):
 		body.take_damage(contact_damage)

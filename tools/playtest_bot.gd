@@ -138,13 +138,16 @@ func _on_laser_fired(hit: bool) -> void:
 func _on_hp(hp: int, _max_hp: int) -> void:
 	if active and hp < last_hp:
 		var near := ""
+		var near_progress := 0.0
 		var best := 1e9
 		for e in get_nodes_in_group("enemies"):
 			var d: float = e.global_position.distance_to(player.global_position)
 			if d < best:
 				best = d
 				near = e.scene_file_path.get_file().get_basename()
-		run.damage.append({"t": _now(), "at": [roundi(player.global_position.x), roundi(player.global_position.y)], "by": near, "going_for_laser": pickup_pos != null})
+				near_progress = e.progress
+		run.damage.append({"t": _now(), "at": [roundi(player.global_position.x), roundi(player.global_position.y)], "by": near, "going_for_laser": pickup_pos != null,
+				"walked": roundi(near_progress), "prank": current_scene.get_node("ShipPranks").active if current_scene.has_node("ShipPranks") else ""})
 	last_hp = hp
 
 
