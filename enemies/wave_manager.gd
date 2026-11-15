@@ -2,6 +2,7 @@ extends Node
 ## Wave manager, game.gd calls setup(). Ploy's.
 # uses a Timer node so spawning pauses by itself during laser aim mode
 
+const MAZE_WANDER := preload("res://enemies/maze_wander.gd")
 const ENEMY_SCENES := {
 	"basic": preload("res://enemies/enemy_basic.tscn"),
 	"fast": preload("res://enemies/enemy_fast.tscn"),
@@ -35,6 +36,10 @@ const WAVES := {
 @export var loop_speedup := 0.85
 ## floor for the loop speedup so late game doesn't flood
 @export var min_speed_factor := 0.4
+## true = every monster gets its own random route (maze_wander.gd), false = Mew's fixed paths
+@export var random_routes := true
+## random routes reach you from more sides, so those monsters walk a bit slower
+const RANDOM_ROUTE_SPEED := 0.75
 ## seconds of quiet at level start
 @export var start_delay := 2.0
 ## spawning waits while this many monsters are alive
@@ -46,10 +51,11 @@ var _wave_index := -1
 var _left_in_wave := 0
 var _speed_factor := 1.0
 var _timer: Timer
+var _wander: RefCounted   # maze_wander.gd
 
 
-## per level cap, overrides max_alive. 28 on level 2 buried playtesters.
-const MAX_ALIVE := {1: 12, 2: 16}
+## per level cap, overrides max_alive. random routes come from every side, so fewer than with fixed paths
+const MAX_ALIVE := {1: 8, 2: 10}
 
 
 func setup(paths: Array[Path2D], level_number: int) -> void:
@@ -59,6 +65,12 @@ func setup(paths: Array[Path2D], level_number: int) -> void:
 	if _paths.is_empty():
 		push_warning("WaveManager: level has no paths under 'Paths', nothing will spawn.")
 		return
+	var level := _paths[0].get_parent().get_parent() if _paths[0].get_parent() else null   # Paths sits on the level root
+	var walls := level.get_node_or_null("Walls") as TileMapLayer if level else null
+	if random_routes and walls:
+		_wander = MAZE_WANDER.new(walls)
+		if not _wander.is_ready():
+			_wander = null
 	_timer = Timer.new()
 	_timer.one_shot = true
 	_timer.timeout.connect(_on_timer)
@@ -103,6 +115,20 @@ func spawn_enemy(type: String) -> Node:
 		type = ENEMY_SCENES.keys().pick_random()
 	var enemy: Node = ENEMY_SCENES[type].instantiate()
 	var path: Path2D = _paths.pick_random()
-	path.add_child(enemy)   # PathFollow2D must be a child of a Path2D
+	if _wander:
+		# its own Path2D: starts where Mew's path starts (the egg), then wanders off
+		var start := path.to_global(path.curve.get_point_position(0))
+		var own := Path2D.new()
+		own.curve = Curve2D.new()
+		own.curve.add_point(start)
+		path.get_parent().add_child(own)
+		enemy.wander = _wander
+		enemy.speed *= RANDOM_ROUTE_SPEED
+		enemy.monster_type = type
+		own.add_child(enemy)
+		enemy.extend_route()
+		enemy.tree_exited.connect(own.queue_free)
+	else:
+		path.add_child(enemy)   # PathFollow2D must be a child of a Path2D
 	Events.enemy_spawned.emit(enemy)
 	return enemy
