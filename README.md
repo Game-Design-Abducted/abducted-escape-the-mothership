@@ -1,230 +1,174 @@
 # Abducted: Escape the Mothership
 
-2D action game: **Pac-Man maze + Tower Defense**, made with **Godot 4.3+ (GDScript)**.
-You've been abducted by aliens. Survive the monster waves, grab the alien laser, and destroy the monster origin (Level 1: an egg, Level 2: the Alien Commander) before the 3-minute timer runs out.
+A 2D action game that mixes a Pac-Man style maze with tower defense, made in **Godot 4.3 (GDScript)**.
 
-Design doc: [docs/design.md](docs/design.md) · Shared rules (collision layers, node names, signals): [docs/contracts.md](docs/contracts.md)
+Aliens have abducted you. Their ship is full of monsters that keep hatching from a monster origin, and your blaster can't hurt the origin. Kill enough monsters to charge the alien laser, grab it, win a quick laser mini-game to hit the origin, and get home before the 3-minute timer runs out.
 
-## Run it
+**Play in the browser:** https://game-design-abducted.github.io/abducted-escape-the-mothership/
 
-1. Install Godot **4.3 or newer** (standard version, not .NET).
-2. Godot → *Import* → pick this folder's `project.godot`.
+Design doc: [docs/design.md](docs/design.md). Credits and asset licenses: [CREDITS.md](CREDITS.md).
 
-**Easy run**
+## Controls
 
-| Where | Play the game | Play just the open scene |
-|---|---|---|
-| **Godot editor** | **F5** (or the ▶ button top-right) | **F6** (or the 🎬 button) |
-| **VS Code** | **F5** (uses *Godot: Play game*) | pick *Godot: Play current scene* in the Run and Debug dropdown, then **F5** |
-
-VS Code needs the **Godot Tools** extension (`geequlim.godot-tools`). Set the Godot path once under *Settings → Godot Tools → Editor Path*.
-
-## Godot basics
-
-- **`.tscn`** = a **scene**: a tree of nodes saved as text (a player, a monster, a menu). Edit it in the Godot editor, not by hand. Scenes can contain other scenes.
-- **`.gd`** = a **GDScript** file: the code that makes a node do things. It is attached to a node in a scene.
-- **Node** = one building block (sprite, collision shape, timer...). **Signal** = a node announcing "something happened"; other code listens. Here the shared ones live in `autoload/events.gd`.
-- Everyday use: double-click a `.tscn` in the **FileSystem** dock (bottom-left) to open it → pick a node in the **Scene** dock (top-left) → change its settings in the **Inspector** (right) → click the 📜 icon to open or attach its `.gd`.
-- **Save** with Ctrl/Cmd+S, then press **F6** to test just your scene. Red text in the **Output** / **Debugger** panel at the bottom = an error to fix.
-
-## Who owns what
-
-Ownership is **per file**, not per folder. **Only edit your own files.** If you need something changed in
-someone else's file, ask them, or use a signal in `autoload/events.gd`. Every `.gd` file has its owner and
-TODO list in the comment at the top.
-
-| Person | Responsible for |
+| Keys | Action |
 |---|---|
-| **Yang** | Player (movement, shooting, HP, bullet) and the whole laser sequence: laser manager (kill charge + spawning, then the sweeping aim), laser pickup, aim mode. Also the story screen. |
-| **Ploy** | All monsters and waves, the monster origin (Egg + Commander), the end screen, and `game.gd` (builds a level and wires everyone's pieces together). **Also the integrator:** reviews and merges PRs, approves changes to `events.gd`, `project.godot` and `docs/`. **Also owns all testing** (see [Testing](#testing-all-ploy)). |
-| **Kong** | `GameState` (3 min timer, win/lose, level flow) and the HUD logic. |
-| **Fah** | All art, animation, sound and fonts. The title screen. Also gives the others sprites, icons and sounds when they ask. |
-| **Mew** | Level 1 and Level 2: maze, walls, enemy paths, spawn points, laser spots. |
+| W A S D / arrow keys | Move |
+| Space / J | Shoot |
+| K / left click | Fire the laser |
+| Esc / P | Pause |
 
-## Build order (who needs what)
+## Game flow
 
-Go top to bottom. A file only needs things from **earlier rows**, so if you're on row 5, rows 1-4 are what you wait on. Rows in the same stage can be built **at the same time**.
+Title screen → intro story → **Level 1** → story → **Level 2** → ending story → win / lose screen.
 
-| Stage | File / piece | Owner | Dependent on |
-|---|---|---|---|
-| **1. Start now** | 1. `levels/level_1.tscn` (maze, paths, spawn points) | Mew | nothing |
-| | 2. `assets/` sprites, sound, font | Fah | nothing (sizes in `docs/contracts.md`) |
-| | 3. `autoload/game_state.gd` (timer, win/lose, level flow) | Kong | nothing |
-| **2. Core pieces** | 4. `player/player.tscn` (move, shoot, HP) | Yang | 1 walls, 2 sprite |
-| | 5. `enemies/` + wave manager (monsters, waves) | Ploy | 1 paths, 2 sprites, 4 player to hurt |
-| | 6. `laser/origins/` (Egg, Commander) | Ploy | 1 `OriginSpot` / `OriginPath`, 2 sprite |
-| **3. Laser** | 7. `laser/` (laser manager, pickup, aim mode) | Yang | 1 laser spots, 5 kills, 6 origin to hit |
-| **4. Wire-up and screens** | 8. `game/game.gd` (builds the level, connects everyone) | Ploy | 1, 4, 5, 6, 7 (loads them all) |
-| | 9. `ui/hud.gd` (HP, laser, timer) | Kong | 3 timer, 4 HP signal, 7 laser signals, 2 hearts and font |
-| | 10. `ui/title_screen.tscn` | Fah | 3 `start_new_game()` |
-| | 11. `ui/story_screen.tscn` | Yang | 3 `story_id`, `goto()` |
-| | 12. `ui/end_screen.tscn` | Ploy | 3 `last_result_won`, `retry_level()` |
-| **5. Finish** | 13. `levels/level_2.tscn` | Mew | 1 (same rules), 6 Commander route |
-| | 14. Smoke test and integration | Ploy | everything above |
+Each level lasts about 1.5–2 minutes for a decent player. The cap is 3 minutes.
 
-Every row already has a working **starter version** in the repo, so you can start your row today and swap in the real thing as earlier rows improve. The names of nodes, signals and functions are fixed in [docs/contracts.md](docs/contracts.md); don't rename them.
-
-## Progress so far (13 Nov 2026)
-
-The whole loop is playable from start to finish: title → intro story → Level 1 → story → Level 2 → ending → win / lose screen.
-
-| Piece | Owner | Status |
+| | Level 1: The Egg | Level 2: The Alien Commander |
 |---|---|---|
-| Monsters and waves | Ploy | **Done.** 3 types move differently (fast zig-zags, tank stops at corners). They hatch out of the origin (small, see-through, can't be hurt and can't hurt for 0.7 s), bob as they walk, pop when hit, and float up and fade when killed. Waves designed for Level 1 and Level 2, with a 2 s quiet start and never more than 40 monsters alive. |
-| Origins (Egg, Commander) | Ploy | **Done.** Commander changes speed and turns around so the laser is hard to time. Both breathe, bulge when a monster comes out, and flash, shake and sink away when the laser destroys them. In Level 2 a glowing floor mark shows where monsters come out. Left: tuning. |
-| `game.gd` wire-up | Ploy | **Done.** Builds the level, connects everyone's pieces, plays the level music and every in-level sound, and adds the screen feel (fade in, screen shake, hit and laser flashes, music dips while aiming, monsters dissolve when you win). Left: tune the volume and shake settings by eye and ear. |
-| End screen | Ploy | **Done.** Spaceship + win sound on a win, hurt astronaut + lose sound on a loss, game fonts. Fades in, the title pops, the picture sways, buttons grow and play the hover / click sounds, fades out. |
-| Tests and CI | Ploy | **Done.** Load check + smoke test run on every PR, and a play-test bot plays whole levels to check balance (see [Testing](#testing-all-ploy)). |
-| Sprites, title art | Fah | **Done.** 24 sprites and the layered home art are in. |
-| Audio and fonts | Fah | **Done.** 3 music tracks, the sound effects and the Minecraft + VT323 fonts are in. The title screen, end screen, level music and every in-level sound are hooked up (laser, shooting, monsters, player hurt / death, last-10-seconds tick; all played from `game.gd`). Not used yet: `typewriter` (story screen has no text effect) and `immune_tink` (bullets pass through the origin). |
-| Title screen | Fah | **Done.** Rebuilt from the layers: animation, START hover / click sounds, looping music. |
-| Player | Yang | **Starter version works** (move, shoot, HP). Left: movement feel (free or Pac-Man grid), attack tuning, hit flash / death sprite. |
-| Laser (charge, pickup, aim) | Yang | **Basic version works** (charge from kills, pickup, sweeping aim, hit / miss / retry). Left: tune kill counts and sweep speed (the first laser shows up after about 20 s, so the 3 minute timer never matters), nicer beam, decide if walls block the laser. **Bug:** a red "flushing queries" error prints each time the laser spawns; the pickup spawn in `laser_manager.gd` probably needs to be deferred. |
-| Story screen | Yang | **Starter version works** (3 text pages). Left: story art, typewriter text effect (the `typewriter` sound is waiting for it). |
-| GameState | Kong | **Starter version works** (timer, win / lose, level flow). Left: a short "YOU WIN / TIME UP" moment before the scene changes, and two decisions: does the timer pause while aiming, does retry restart the same level or Level 1. |
-| HUD | Kong | **Starter version works** (hearts, timer, laser status). Left: pixel font, timer turns red under 30 s, heart-lost animation, laser icon, wave number and level title. In Level 2 monsters on the top row walk under the hearts. |
-| Level 1 and Level 2 | Mew | **Done.** Both mazes are in: walls, 2 monster routes per level that loop back to the start, laser spots, and the Commander route in Level 2. |
+| Origin | A stationary egg | Walks its own route, changes speed at random and sometimes turns around |
+| Laser hits to win | 2 | 3 |
+| Waves | 7 waves, starting gently | 8 waves, faster and denser |
+| Ship pranks | Lights out, floor wax, balloon party | The same plus reversed controls |
 
-The detailed TODO list for each piece is in the comment at the top of its `.gd` file.
+## Game mechanics
 
-## Testing (all Ploy)
+### The core loop
+1. **Survive and shoot.** Monsters hatch from the origin and roam the maze. Touching one costs a heart, and you have 4.
+2. **Charge the laser.** Each level sets a kill quota per monster type, shown on the HUD. Filling every quota spawns the laser gun at one of the level's laser spots.
+3. **Grab it and fire.** Picking it up freezes the game and starts a laser mini-game aimed at the origin.
+4. **Hit or miss.**
+   - A hit damages the origin. Destroy it and you win the level.
+   - A miss, or a hit that doesn't finish the origin, sends you back to step 2 with a smaller quota.
+5. **Lose** if the timer reaches 0 or you run out of hearts.
 
-CI runs both of these on every pull request. To run them yourself:
+### Monsters
+| Type | Speed | HP | How it moves |
+|---|---|---|---|
+| Basic | Medium | 1 | Walks steadily |
+| Fast | Fast | 1 | Zig-zags side to side |
+| Tank | Slow | 3 | Stops briefly at every corner |
+
+- **Routes.** Each monster picks random routes through the maze, so no two runs play the same. Now and then one heads for where you are.
+- **Spawning.** Waves come from a timed list. When the list ends it loops, about 15% faster each time.
+- **Hatching.** A new monster is small and see-through. It can't hurt you or be hurt for a moment, and it always leaves the origin on the side away from you, so standing near the origin isn't a death trap.
+
+### Laser mini-games
+Each laser shot is one of four mini-games, picked at random but never the same one twice in a row. Level 1's first shot is always Sweep, so the first one teaches the idea.
+
+| Mode | How it works |
+|---|---|
+| **Sweep** | An aim line rotates around you. Fire when it crosses the origin. |
+| **Power Shot** | Hold to charge a bar and let go inside the green zone. |
+| **Beat Drop** | Rings shrink onto the origin to a beat. Press on at least 2 of 3 beats. Pressing too early or too late loses the beat, so mashing doesn't work. |
+| **Trick Shot** | Sweep, but only the beam that bounces off the outer wall counts. |
+
+**Pity laser:** each miss in a row makes the next shot a bit easier (bigger hit area, slower aim line). The bonus resets on a hit. Long shots also get a slightly bigger hit area, so standing far away isn't punished.
+
+### Space Junk (item drops)
+Killed monsters sometimes drop an item, at most 2 on the floor at once. If nothing has dropped for 25 seconds, the next kill always drops one.
+
+| Item | Effect |
+|---|---|
+| Whoopee Bomb | Pops every monster close to it after a short wheeze |
+| Disco Ball | Monsters stop to dance for a few seconds and can't hurt you |
+| Space Burrito | +1 heart |
+
+### Ship pranks
+About every 40 seconds the ship plays a short prank on you, with a warning first. It's the game's running joke and also keeps the middle of a level from feeling the same.
+
+| Prank | What happens |
+|---|---|
+| **Lights out** | Everything goes dark except a circle around you |
+| **Floor wax day** | You slide around on the floor |
+| **Balloon party** | Monsters puff up to 1.5x size and slow down: easier to hit, harder to slip past |
+| **Controls reversed** (Level 2) | Your movement keys are flipped for 5 seconds |
+
+## Technical overview
+
+### Scene structure
+```
+title_screen ─► story_screen ─► game.tscn (Level 1) ─► story ─► game.tscn (Level 2) ─► story (ending) ─► end_screen
+                                    │
+        game.gd builds: Level ─ Player ─ WaveManager ─ LaserManager ─ Origin ─ HUD ─ DropManager ─ ShipPranks ─ PauseMenu
+```
+
+- **One game scene, two levels.** `game/game.tscn` loads a level scene (`levels/level_1.tscn` or `level_2.tscn`) and builds everything else around it from code. Every level scene uses the same node names (`Walls`, `Paths`, `PlayerStart`, `OriginSpot`, `LaserSpawns`, `Entities`), so adding a level means drawing a new maze, not changing any code.
+- **Systems talk through an event bus.** `autoload/events.gd` is a global list of signals, such as `enemy_killed`, `laser_picked_up`, `laser_fired(hit)` and `player_hp_changed`. Systems emit and listen instead of calling each other, so, for example, the HUD never touches the player or monster code.
+- **`GameState` autoload.** Holds the 3-minute countdown, win / lose, which level you're on and which story page to show, and survives scene changes.
+
+### Monster AI and pathfinding (`enemies/`)
+- **Monster body.** Each monster is a `PathFollow2D` that walks along a `Path2D` curve. The three types share `enemy.gd` and differ only in their numbers (speed, HP, zig-zag, corner pause).
+- **Route planning.** `maze_wander.gd` reads the wall tilemap and builds an `AStarGrid2D` on the tile corners. A corner is walkable only if the four tiles around it are floor, so routes run down the middle of the 2-tile corridors and never clip a wall.
+- **Random stops.** When a monster nears the end of its route, it asks for a new random stop at least 6 tiles away and appends that route to its curve, so it never stops.
+- **Straight walking.** Raw A\* paths zig-zag in open rooms. They're straightened into long L-shaped legs, so monsters walk straight lines and turn only at real corners.
+- **Going around the player.** While a monster is wandering (not chasing), the tiles around the player get a higher A\* cost. Monsters then take another way when there is one, instead of running into you from behind.
+
+### Pausing
+Godot's pause system does most of the work.
+- **Laser mini-game.** Picking up the laser pauses the scene tree. Monsters, spawn timers and the countdown use the default *Inherit* process mode, so they all freeze automatically.
+- **Things that keep running.** The laser mini-game, HUD and pop-up text use *Always* so they keep running. So does the Level 2 Commander, which keeps moving at half speed while you aim, and that's what makes Level 2 harder.
+- **Pause menu.** The pause menu stops even the *Always* nodes.
+
+### Combat details
+- **Collision layers.** Layers are named in Project Settings: walls, player, enemies, player_attack, pickups, origin. Each object's mask lists only what it needs to hit.
+- **Origin can't be shot.** Only the laser can hurt it: it has no `take_damage()`, just `take_laser_hit()`.
+- **The blaster.** It points where you shoot and mirrors when aiming left. It checks for a wall between your hand and the muzzle, so bullets can't go through walls when you hug one.
+
+### Balancing with a play-test bot
+`tools/playtest_bot.gd` is a scripted, deliberately average player. It plays whole levels at 3x speed and reports win / loss, time, kills and every hit it took.
+- **Our target:** the bot wins about 80–95% of runs in 1.5–2 minutes.
+- **What we tuned with it:** wave timing, kill quotas, monster speed and how many monsters can be alive at once.
+- **Latest results with random routes:** Level 1 won 45 of 48 runs, Level 2 won 23 of 24.
+
+### Automated tests and deployment
+- **CI on every pull request** (`.github/workflows/ci.yml`) installs Godot 4.3 and runs two checks:
+  - **Load check** (`tools/check_load.gd`): every script and scene loads.
+  - **Smoke test** (`tools/smoke_test.gd`): plays the whole game loop headless (title → story → both levels → end screen) and fails on any script error.
+- **Web deploy** (`.github/workflows/deploy-web.yml`): every push to `main` exports a web build and publishes it to GitHub Pages.
+
+## Running it
+
+1. Install **Godot 4.3 or newer** (the standard version, not .NET).
+2. In Godot, choose *Import* and pick this folder's `project.godot`.
+3. Press **F5** to play.
+
+Running the tests yourself:
 
 ```bash
 godot --headless --path . --import
 godot --headless --path . -s tools/check_load.gd
 godot --headless --path . -s tools/smoke_test.gd
-```
-
-- **Load check** (`tools/check_load.gd`, about 1 second): every script and scene loads.
-- **Smoke test** (`tools/smoke_test.gd`, about a minute): plays the whole game loop and prints PASS / FAIL for each step.
-
-Not in CI, run it by hand after changing waves, monsters or a level:
-
-```bash
 godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4
 ```
 
-- **Play-test bot** (`tools/playtest_bot.gd`, a few minutes): a simple scripted player plays the level `--runs` times at 3x speed and prints, for each run, win / died / time up, how long it took, kills, hits taken and every laser shot. It is a mediocre player on purpose: if it wins every run in 20 seconds the level is too easy, if it never wins it is probably too hard. It can't judge how the game feels. The options are at the top of the file.
-
-## Project layout and who owns each file
+## Project layout
 
 ```
 abducted-escape-the-mothership/
-├── project.godot                  # Ploy: only Ploy edits this (new input actions, autoloads)
-├── README.md                      # Ploy
-├── CREDITS.md                     # Ploy
-├── .gitignore, .gitattributes     # Ploy: git settings, ask before changing
+├── project.godot          # input map, autoloads, collision layer names
 ├── autoload/
-│   ├── events.gd                  # shared signals, ask Ploy before adding one
-│   └── game_state.gd              # Kong: timer, win/lose, level flow
+│   ├── events.gd          # global signal bus
+│   └── game_state.gd      # timer, win / lose, level flow
 ├── game/
-│   ├── game.gd                    # Ploy: builds a level and wires every system
-│   ├── game.tscn                  # Ploy
-│   ├── spawn_marker.gd            # Ploy: glowing floor mark where monsters come out (Level 2)
-│   └── GUIDE.md                   # Ploy
-├── levels/
-│   ├── level.gd                   # Mew
-│   ├── level_1.tscn               # Mew
-│   ├── level_2.tscn               # Mew
-│   ├── tiles/                     # Mew: tileset (techlab_tiles.png, techlab_tileset.tres)
-│   └── GUIDE.md                   # Mew
-├── player/
-│   ├── player.gd                  # Yang: movement, attack, HP
-│   ├── player.tscn                # Yang
-│   ├── bullet.gd                  # Yang
-│   ├── bullet.tscn                # Yang
-│   └── GUIDE.md                   # Yang
-├── laser/
-│   ├── laser_manager.gd           # Yang: laser charge (kills), spawn, pickup, hit/miss loop
-│   ├── laser_pickup.gd            # Yang
-│   ├── laser_pickup.tscn          # Yang
-│   ├── aim_mode.gd                # Yang: pause + sweeping aim + fire
-│   ├── GUIDE.md                   # Kong (old, see note below)
-│   └── origins/
-│       ├── origin.gd              # Ploy: base script, only the laser can hurt it
-│       ├── egg.tscn               # Ploy: level 1 origin, stands still
-│       ├── commander.gd           # Ploy: level 2 origin, walks a path
-│       └── commander.tscn         # Ploy
+│   ├── game.gd/.tscn      # builds a level and connects every system
+│   ├── ship_pranks.gd     # the timed silly twists
+│   ├── float_text.gd      # pop-up words ("SPLAT!")
+│   └── spawn_marker.gd    # glowing floor mark where monsters come out (Level 2)
+├── levels/                # level_1 and level_2 mazes, shared level script, tileset
+├── player/                # player movement, blaster, HP, bullets
 ├── enemies/
-│   ├── enemy.gd                   # Ploy: shared monster script
-│   ├── enemy_basic.tscn           # Ploy
-│   ├── enemy_fast.tscn            # Ploy
-│   ├── enemy_tank.tscn            # Ploy
-│   ├── wave_manager.gd            # Ploy: what spawns and when
-│   └── GUIDE.md                   # Ploy
-├── ui/
-│   ├── title_screen.gd/.tscn      # Fah: main menu (the game's main scene)
-│   ├── story_screen.gd/.tscn      # Yang: intro / level 2 / ending pages
-│   ├── hud.gd/.tscn               # Kong: hearts, timer, laser status (Fah gives the art)
-│   ├── end_screen.gd/.tscn        # Ploy: you won / game over
-│   └── GUIDE.md                   # Fah (old, see note below)
-├── assets/                        # Fah
-│   ├── sprites/                   # Fah: 24 in-game 64x64 PNGs (player, monsters, egg, laser, hearts...)
-│   ├── home/                      # Fah: layered title screen art
-│   ├── audio/                     # Fah: music/ (3 looping tracks) and sfx/
-│   └── fonts/                     # Fah: Minecraft.ttf (titles), VT323.ttf (body text)
-├── art_source/                    # Fah: Illustrator and hi-res source, Godot ignores it
-│   └── techlab_pack/              # Mew: original tile pack (license + full tileset) that levels/tiles/ was cut from
-├── tools/
-│   ├── check_load.gd              # Ploy: checks every script and scene loads (CI runs it)
-│   ├── playtest_bot.gd            # Ploy: a scripted player plays whole levels, to check balance
-│   ├── convert_sprites.py         # Fah: turns big exports into 64x64 sprites
-│   └── smoke_test.gd              # Ploy: plays the whole game loop automatically
-├── sandbox/                       # personal test scenes (name them yourname_*.tscn)
-│   ├── ploy_test.gd/.tscn         # Ploy: waves on level 1 paths, no player
-│   └── yang_test.tscn             # Yang: walk around level 1 with the player
-└── docs/                          # Ploy: design.md and contracts.md, ask before changing
+│   ├── enemy.gd           # shared monster behavior
+│   ├── enemy_*.tscn       # basic, fast, tank
+│   ├── wave_manager.gd    # wave lists and spawning
+│   └── maze_wander.gd     # A* random routes through the maze
+├── laser/
+│   ├── laser_manager.gd   # kill quotas, pickup, picks the mini-game, hit / miss
+│   ├── aim_mode.gd        # Sweep, and the base for the other modes
+│   ├── aim_modes/         # Power Shot, Beat Drop, Trick Shot
+│   └── origins/           # Egg (Level 1) and Commander (Level 2)
+├── items/                 # Space Junk drops
+├── ui/                    # title, story, HUD, pause menu, end screen
+├── assets/                # sprites, story art, music, sound effects, fonts
+├── tools/                 # load check, smoke test, play-test bot, sprite converter
+└── docs/                  # design doc and shared technical rules
 ```
-
-Two kinds of small files are not listed one by one:
-- `*.import` files (Godot makes one next to every image) belong to the owner of the picture next to them.
-- `.gdignore` and `.gitkeep` files only tell Godot or git to skip or keep a folder, so they belong to that folder's owner.
-
-`GUIDE.md` files inside `levels/`, `player/`, `laser/` and `ui/` are older and still describe the
-first split of work. If one disagrees with this README, follow this README.
-
-## How the pieces connect
-
-```
-title_screen ──START──► story_screen ──► game.tscn ──► (win) story ──► game (L2) ──► story(ending) ──► end_screen
-                                            │
-       game.gd builds:  Level (Mew) ─ Player (Yang) ─ WaveManager (Ploy) ─ LaserManager (Yang) ─ Origin (Ploy) ─ HUD (Kong)
-       they talk only through  Events.*  signals  +  GameState
-```
-
-## Git workflow for commit (2 ways)
-### 1. Github Desktop
-
-Use **[GitHub Desktop](https://desktop.github.com)**. Setup: install it, sign in, *File → Clone repository* → pick this repo.
-
-**Start your work**
-1. Top bar → *Current Branch* → *New Branch* → name it `yourname/feature-name` (for example `mew/level-1-tiles`).
-
-**Do your work in Godot** (see "Godot basics"), then press **F5** (or **F6** on your scene). It should run with no red errors in the Output panel and do what its `GUIDE.md` says.
-
-**When you finish your part**
-1. Save everything in Godot (Ctrl/Cmd+S).
-2. In GitHub Desktop, look at the changed-files list on the left. Only files you own should be there. If something else is, right-click it → *Discard changes*.
-3. Bottom-left: type a short message ("Add level 1 tiles") → **Commit to yourname/feature-name**.
-4. Click **Push origin** (top bar).
-5. Click **Create Pull Request** (it opens GitHub) and tag Ploy. Ploy runs the tests and merges.
-6. Don't merge your own PR. If Ploy reports a bug in your part, fix it, then commit and push again on the same branch.
-
-Never commit to `main` (the branch name in the top bar should be yours).
-
-### 2. Git from terminal
-
-```bash
-git checkout main && git pull
-git checkout -b yourname/feature-name
-# ...work, press F5 to check it runs...
-git status                                   # only your own files should be listed
-git add . && git commit -m "Short description"
-git push -u origin yourname/feature-name   # then open a Pull Request on GitHub
-```
-
-</details>
-
-Merge small and often (at least once a day), so the others get your work early and nobody waits for a big merge at the end.
