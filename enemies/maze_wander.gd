@@ -10,6 +10,8 @@ const MIN_TRIP := 6   ## a random stop is at least this many tiles away
 const AVOID_RADIUS := 3   ## wandering monsters route around this many tiles around the player...
 const AVOID_COST := 8.0   ## ...if the detour costs less than this many times the straight way
 
+## multiplies CHASE_CHANCE (hardcore sets it)
+var chase_scale := 1.0
 var _walls: TileMapLayer
 var _grid := AStarGrid2D.new()
 var _points: Array[Vector2i] = []
@@ -41,7 +43,7 @@ func next_route(from: Vector2, monster_type: String, player: Node2D, first := fa
 	var start := _nearest(from)
 	var goal := start
 	var has_player := is_instance_valid(player)
-	var chasing: bool = has_player and not first and randf() < CHASE_CHANCE.get(monster_type, 0.25)
+	var chasing: bool = has_player and not first and randf() < CHASE_CHANCE.get(monster_type, 0.25) * chase_scale
 	if chasing:
 		goal = _nearest(player.global_position)
 	for i in 20:   # a few tries to find a far enough random stop

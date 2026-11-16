@@ -20,6 +20,8 @@ var last_result_won := false
 var last_result_time_up := false
 ## Which page story_screen shows: "intro", "level2" or "ending"
 var story_id := "intro"
+## Picked on the title screen. Hardcore: 2 hearts, full-speed monsters that chase more, no pity laser
+var hardcore := false
 
 
 func _ready() -> void:

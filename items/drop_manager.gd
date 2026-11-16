@@ -74,7 +74,7 @@ func _pick_kind() -> String:
 	var weights := WEIGHTS.duplicate()
 	if _hp >= _max_hp:
 		weights.erase("snack")   # no burrito when you're full
-	elif _hp * 2 <= _max_hp:
+	elif _hp * 2 <= _max_hp and not GameState.hardcore:
 		weights["snack"] = 70    # comeback: low on hearts, burritos show up more
 	var total := 0
 	for k in weights:

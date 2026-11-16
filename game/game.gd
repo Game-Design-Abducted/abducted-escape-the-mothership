@@ -6,6 +6,7 @@ const LEVEL_SCENES := {
 	2: preload("res://levels/level_2.tscn"),
 }
 const PLAYER_SCENE := preload("res://player/player.tscn")
+const HARDCORE_HP := 2
 const EGG_SCENE := preload("res://laser/origins/egg.tscn")
 const COMMANDER_SCENE := preload("res://laser/origins/commander.tscn")
 
@@ -104,6 +105,8 @@ func _ready() -> void:
 
 	# 2. Player (Yang)
 	var player: Node2D = PLAYER_SCENE.instantiate()
+	if GameState.hardcore:
+		player.max_hp = HARDCORE_HP
 	player.position = level.get_player_start()
 	level.get_entities().add_child(player)
 
