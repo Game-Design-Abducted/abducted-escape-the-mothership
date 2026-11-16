@@ -21,6 +21,14 @@ var _ufo_y := 0.0
 var _astro_y := 0.0
 var _starting := false
 var _hover_tween: Tween
+var _mode_button: Button
+var _mode_info: Label   # the hint label under START
+
+## [name, one-line description, color] for GameState.hardcore false / true
+const MODES := {
+	false: ["NORMAL", "4 hearts, laser gets easier after a miss", Color.WHITE],
+	true: ["HARDCORE", "2 hearts, faster monsters, no laser help", Color(1.0, 0.35, 0.3)],
+}
 
 
 func _ready() -> void:
@@ -30,6 +38,7 @@ func _ready() -> void:
 	_setup_audio()
 	_twinkle_stars()
 	_add_guide_cards()
+	_add_mode_picker()
 	start_button.grab_focus() # before connecting, so no hover sound on load
 	start_button.pressed.connect(_on_start)
 	start_button.mouse_entered.connect(_on_hover.bind(true))
@@ -58,6 +67,47 @@ func _add_guide_cards() -> void:
 	add_child(how)
 	how.reset_size()
 	how.position = Vector2(size.x - how.size.x - 36, 300)
+
+
+## NORMAL / HARDCORE switch between START and the hint. click it or press left / right.
+## the hint line under it shows what the mode means
+func _add_mode_picker() -> void:
+	_mode_button = Button.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(0.12, 0, 0.25, 0.9 if state == "normal" else 1.0)
+		box.set_border_width_all(2)
+		box.set_corner_radius_all(18)
+		_mode_button.add_theme_stylebox_override(state, box)
+	_mode_button.add_theme_font_override("font", start_button.get_theme_font("font"))
+	_mode_button.add_theme_font_size_override("font_size", 22)
+	_mode_button.position = Vector2(start_button.position.x + 45, 390)
+	_mode_button.size = Vector2(start_button.size.x - 90, 38)
+	_mode_button.focus_mode = Control.FOCUS_NONE   # left / right and clicks switch it, ENTER stays on START
+	_mode_button.pressed.connect(_toggle_mode)
+	_mode_button.mouse_entered.connect(_play.bind(SFX_HOVER))
+	add_child(_mode_button)
+	_mode_info = $Hint
+	_mode_info.position.y = 434
+	_mode_info.add_theme_font_size_override("font_size", 22)
+	_show_mode()
+
+
+func _toggle_mode() -> void:
+	GameState.hardcore = not GameState.hardcore
+	_play(SFX_CLICK)
+	_show_mode()
+
+
+func _show_mode() -> void:
+	var mode: Array = MODES[GameState.hardcore]
+	_mode_button.text = "< %s >" % mode[0]
+	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+		_mode_button.add_theme_color_override(c, mode[2])
+	for state in ["normal", "hover", "pressed", "focus"]:
+		(_mode_button.get_theme_stylebox(state) as StyleBoxFlat).border_color = mode[2]
+	_mode_info.text = mode[1]
+	_mode_info.modulate = Color(mode[2], 0.8)
 
 
 func _twinkle_stars() -> void:
@@ -89,8 +139,15 @@ func _on_start() -> void:
 	tw.chain().tween_callback(GameState.start_new_game)
 
 
+## _input, not _unhandled_input: a focused button would eat left / right for focus moves
+func _input(event: InputEvent) -> void:
+	if not _starting and (event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right")):
+		_toggle_mode()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_accept") and not start_button.has_focus():
+	if not _starting and event.is_action_pressed("ui_accept") and not start_button.has_focus():
 		_on_start()
 
 

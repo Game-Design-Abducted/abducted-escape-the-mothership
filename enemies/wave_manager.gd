@@ -56,12 +56,16 @@ var _wander: RefCounted   # maze_wander.gd
 
 ## per level cap, overrides max_alive. random routes come from every side, so fewer than with fixed paths
 const MAX_ALIVE := {1: 8, 2: 10}
+## hardcore (GameState.hardcore): more monsters, walking faster, chasing you more often
+const HARDCORE_MAX_ALIVE := {1: 13, 2: 13}
+const HARDCORE_ROUTE_SPEED := 0.9
+const HARDCORE_CHASE_SCALE := 2.0
 
 
 func setup(paths: Array[Path2D], level_number: int) -> void:
 	_paths = paths
 	_waves = WAVES.get(level_number, WAVES[1])
-	max_alive = MAX_ALIVE.get(level_number, max_alive)
+	max_alive = (HARDCORE_MAX_ALIVE if GameState.hardcore else MAX_ALIVE).get(level_number, max_alive)
 	if _paths.is_empty():
 		push_warning("WaveManager: level has no paths under 'Paths', nothing will spawn.")
 		return
@@ -71,6 +75,8 @@ func setup(paths: Array[Path2D], level_number: int) -> void:
 		_wander = MAZE_WANDER.new(walls)
 		if not _wander.is_ready():
 			_wander = null
+		elif GameState.hardcore:
+			_wander.chase_scale = HARDCORE_CHASE_SCALE
 	_timer = Timer.new()
 	_timer.one_shot = true
 	_timer.timeout.connect(_on_timer)
@@ -123,7 +129,7 @@ func spawn_enemy(type: String) -> Node:
 		own.curve.add_point(start)
 		path.get_parent().add_child(own)
 		enemy.wander = _wander
-		enemy.speed *= RANDOM_ROUTE_SPEED
+		enemy.speed *= HARDCORE_ROUTE_SPEED if GameState.hardcore else RANDOM_ROUTE_SPEED
 		enemy.monster_type = type
 		own.add_child(enemy)
 		enemy.extend_route()

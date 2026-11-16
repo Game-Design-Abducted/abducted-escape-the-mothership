@@ -1,9 +1,10 @@
 extends SceneTree
-## Play-test bot for balance checks, not in CI. godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4 --speed=3 --out=FOLDER
+## Play-test bot for balance checks, not in CI. godot --path . -s tools/playtest_bot.gd -- --level=1 --runs=4 --speed=3 --out=FOLDER [--hardcore]
 
 var out_dir := ""
 var level_number := 1
 var run_count := 4
+var hardcore := false
 var speed := 3.0   # physics tick rate is raised to match, so each tick moves things as far as in real play
 
 var st: Node
@@ -38,6 +39,8 @@ func _initialize() -> void:
 			run_count = maxi(int(value), 1)
 		elif arg.begins_with("--speed="):
 			speed = clampf(float(value), 1.0, 5.0)
+		elif arg == "--hardcore":
+			hardcore = true
 		elif arg.begins_with("--out="):
 			out_dir = value
 	if out_dir != "":
@@ -53,6 +56,7 @@ func _now() -> float:
 
 func _run() -> void:
 	st = root.get_node("GameState")
+	st.hardcore = hardcore
 	ev = root.get_node("Events")
 	ITEM_SCRIPT = load("res://items/item_drop.gd")
 	await process_frame

@@ -152,11 +152,11 @@ func _start_aim() -> void:
 	aim.set_script(MODES[mode])
 	aim.from_position = _player.global_position
 	aim.level_number = GameState.current_level
-	aim.assist = minf(1.0 + PITY_RADIUS_PER_MISS * _misses, PITY_RADIUS_MAX)
+	aim.assist = minf(1.0 + PITY_RADIUS_PER_MISS * _pity(), PITY_RADIUS_MAX)
 	var speed := sweep_speed_level_2 if GameState.current_level >= 2 else sweep_speed_level_1
 	if mode == "trick":
 		speed *= TRICK_SPEED_FACTOR
-	aim.sweep_speed = speed * maxf(pow(PITY_SPEED_PER_MISS, _misses), PITY_SPEED_MIN)
+	aim.sweep_speed = speed * maxf(pow(PITY_SPEED_PER_MISS, _pity()), PITY_SPEED_MIN)
 	aim.target = _origin
 	aim.hit_radius = _origin.hit_radius
 	aim.radius_per_distance = HIT_RADIUS_PER_DISTANCE
@@ -166,6 +166,11 @@ func _start_aim() -> void:
 	aim.fired.connect(_on_fired.bind(aim))
 	_level.add_child(aim)
 	Events.laser_mode_started.emit(aim.mode_name(), aim.how_to())
+
+
+## misses that count toward the pity laser. hardcore has none
+func _pity() -> int:
+	return 0 if GameState.hardcore else _misses
 
 
 func _pick_mode() -> String:
@@ -195,7 +200,7 @@ func _on_fired(direction: Vector2, aim: Node) -> void:
 	get_tree().paused = false
 	_misses = 0 if hit else _misses + 1
 	if _origin != null:
-		_origin.hit_radius = _base_hit_radius * minf(1.0 + PITY_RADIUS_PER_MISS * _misses, PITY_RADIUS_MAX)
+		_origin.hit_radius = _base_hit_radius * minf(1.0 + PITY_RADIUS_PER_MISS * _pity(), PITY_RADIUS_MAX)
 	Events.laser_fired.emit(hit)
 	if hit:
 		_origin.take_laser_hit()

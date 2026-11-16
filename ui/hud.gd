@@ -98,7 +98,7 @@ func _clear_message() -> void:
 
 
 func _on_level_started(level_number: int) -> void:
-	level_label.text = "LEVEL %d" % level_number
+	level_label.text = "LEVEL %d" % level_number + ("  HARDCORE" if GameState.hardcore else "")
 
 
 func _on_wave_started(wave_number: int) -> void:
