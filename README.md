@@ -17,7 +17,7 @@ Design doc: [docs/design.md](docs/design.md). Credits and asset licenses: [CREDI
 | K / left click | Fire the laser |
 | Esc / P | Pause |
 
-On a phone or tablet (in the browser, held sideways): the left thumb is a joystick, hold the right side to shoot, tap anywhere to fire the laser, and the II button pauses.
+On a phone or tablet (in the browser, held sideways): the left thumb is a joystick, hold the right side to shoot, tap anywhere to fire the laser, and the II button pauses. The game goes full screen on the first tap. On an iPhone, Safari can't do that, so add the game to the Home Screen (Share, then Add to Home Screen) and play from the icon.
 
 ## Game flow
 
