@@ -23,6 +23,7 @@ var _root: Control
 var _subtitle: Label
 var _resume: Button
 var _sfx: AudioStreamPlayer
+var _hint: Label   # "ESC  pause", hidden on touch screens (they get a pause button)
 
 
 func _ready() -> void:
@@ -35,6 +36,10 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	open = false   # never leave the flag on for the next scene
+
+
+func _process(_delta: float) -> void:
+	_hint.visible = not TouchControls.active
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -95,6 +100,7 @@ func _build() -> void:
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	hint.position = Vector2(12, 692)
 	add_child(hint)
+	_hint = hint
 
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)

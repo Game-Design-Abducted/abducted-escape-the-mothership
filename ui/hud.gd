@@ -29,7 +29,7 @@ func _ready() -> void:
 	Events.laser_spawned.connect(func(_pos): laser_label.text = "LASER READY! Grab it!")
 	Events.laser_mode_started.connect(func(mode_name: String, how_to: String):
 		message_label.text = "LASER MODE: %s
-%s" % [mode_name, how_to.to_upper()])
+%s" % [mode_name, TouchControls.words(how_to).to_upper()])
 	Events.laser_fired.connect(_on_laser_fired)
 	Events.level_started.connect(_on_level_started)
 	Events.wave_started.connect(_on_wave_started)

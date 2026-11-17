@@ -61,15 +61,21 @@ func _type_out() -> void:
 func _show_hint() -> void:
 	body_label.visible_ratio = 1.0
 	hint_label.modulate.a = 1.0
+	hint_label.text = TouchControls.words("Press any key to continue")
 	var blink := create_tween().set_loops()
 	blink.tween_property(hint_label, "modulate:a", 0.35, 0.6)
 	blink.tween_property(hint_label, "modulate:a", 1.0, 0.6)
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## _input, not _unhandled_input: the story art sits over the whole screen and would eat clicks and taps
+func _input(event: InputEvent) -> void:
+	TouchControls.watch(event)
 	if _left or Time.get_ticks_msec() < _accept_input_at:
 		return
-	if (event is InputEventKey or event is InputEventMouseButton) and event.is_pressed():
+	# a tap also arrives as a made-up mouse click, count it once
+	if event is InputEventMouseButton and event.device == InputEvent.DEVICE_ID_EMULATION:
+		return
+	if (event is InputEventKey or event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		if _typing and _typing.is_running():
 			_typing.kill()   # first press: show the whole page
 			_show_hint()

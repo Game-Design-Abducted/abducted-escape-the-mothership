@@ -154,7 +154,13 @@ func _ready() -> void:
 	_setup_feel(origin)
 
 	# 11. Pause menu
-	add_child(PauseMenu.new())
+	var pause_menu := PauseMenu.new()
+	add_child(pause_menu)
+
+	# 13. Touch controls for phones (hidden until a touch screen is used)
+	var touch := TouchControls.new()
+	touch.pause_menu = pause_menu
+	add_child(touch)
 
 	# 7. Start the clock
 	GameState.begin_level()
