@@ -13,6 +13,13 @@ const CONTROLS := [
 	[["K", "CLICK"], "fire the laser"],
 	[["ESC", "P"], "pause"],
 ]
+## shown instead of CONTROLS on a touch screen (ui/touch_controls.gd)
+const TOUCH_CONTROLS := [
+	[["LEFT THUMB"], "move"],
+	[["RIGHT THUMB"], "hold to shoot"],
+	[["TAP"], "fire the laser"],
+	[["II"], "pause"],
+]
 const STEPS := [
 	"1  Shoot monsters to charge the laser",
 	"2  Grab the laser gun",
@@ -28,7 +35,7 @@ const JUNK := [
 
 static func controls() -> ControlsCard:
 	var card := _card("CONTROLS")
-	for row in CONTROLS:
+	for row in (TOUCH_CONTROLS if TouchControls.active else CONTROLS):
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 10)
 		var keys := HBoxContainer.new()   # fixed width, so the actions line up

@@ -141,6 +141,7 @@ func _on_start() -> void:
 
 ## _input, not _unhandled_input: a focused button would eat left / right for focus moves
 func _input(event: InputEvent) -> void:
+	TouchControls.watch(event)
 	if not _starting and (event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right")):
 		_toggle_mode()
 		get_viewport().set_input_as_handled()
