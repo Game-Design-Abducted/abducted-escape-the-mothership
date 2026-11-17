@@ -5,7 +5,7 @@ name: Deploy web build
 #
 # One-time setup: repo Settings -> Pages -> Source = "GitHub Actions".
 # To build the same thing on your own machine: Project -> Export -> Web -> Export Project
-# (the "Web" preset lives in export_presets.cfg).
+# (the "Web" preset lives in export_presets.cfg), then copy web/manifest.webmanifest next to index.html.
 
 on:
   push:
@@ -71,6 +71,8 @@ jobs:
           mkdir -p export/web
           godot --headless --path . --export-release "Web" export/web/index.html 2>&1 | tee export.log
           test -f export/web/index.pck || { echo "::error::Export produced no index.pck (see the log above)"; exit 1; }
+          # the web app manifest, so phones can add the game to the home screen and open it full screen
+          cp web/manifest.webmanifest export/web/
           ls -la export/web
 
       - uses: actions/upload-pages-artifact@v3
